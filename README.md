@@ -18,7 +18,7 @@ Semuanya kelihatan sekaligus begitu masuk. Saat di dalam, tap objeknya untuk lan
 Satu file statis (`index.html`, Three.js r128 dari CDN) plus satu Vercel function (`api/rsvp.js`). Tanpa build step. Mobile-first.
 
 ## Kontrol
-- HP: joystick kiri bawah, tombol **A** kanan bawah, tap tanah/pilar untuk jalan otomatis, pinch untuk zoom.
+- HP: joystick kiri bawah, tombol **A** kanan bawah, tap lantai untuk jalan otomatis, tap objek info di foyer untuk langsung membukanya, pinch untuk zoom.
 - Laptop: WASD / panah, Space / Enter / E untuk aksi, scroll untuk zoom.
 
 ## Ganti data undangan
