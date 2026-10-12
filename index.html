@@ -66,7 +66,15 @@ button{cursor:pointer}
 #btnA{width:78px;height:78px;border-radius:50%;background:var(--rose);color:var(--white);border:3px solid var(--wood-dk);box-shadow:0 5px 0 var(--wood-dk);font-family:var(--f-pixel);font-size:30px;font-weight:700;touch-action:manipulation}
 #btnA:disabled{background:#c9b79a;color:var(--paper);cursor:default}
 #btnA:not(:disabled):active{transform:translateY(3px);box-shadow:0 2px 0 var(--wood-dk)}
-.hud.busy #joy,.hud.busy .act{visibility:hidden}
+.hud.busy #joy,.hud.busy .act,.hud.busy #phoneTip{visibility:hidden}
+#phoneTip{position:absolute;right:14px;bottom:calc(132px + env(safe-area-inset-bottom,0px));width:min(270px,calc(100% - 28px));padding:12px 14px 12px;display:flex;flex-direction:column;gap:10px;z-index:3}
+#phoneTip::after{content:"";position:absolute;right:38px;bottom:-12px;width:18px;height:18px;background:var(--paper);border-right:3px solid var(--wood-dk);border-bottom:3px solid var(--wood-dk);transform:rotate(45deg)}
+#phoneTip p{margin:0;font-size:14.5px;font-weight:700;line-height:1.45}
+#phoneTip .row{gap:8px}
+#phoneTip .btn{padding:7px 12px;font-size:14px}
+#btnPhone.pulse::before{content:"";position:absolute;inset:-6px;border-radius:30px;border:3px solid var(--gold);animation:phpulse 1.4s ease-out infinite}
+@keyframes phpulse{0%{transform:scale(.92);opacity:1}100%{transform:scale(1.35);opacity:0}}
+@media (prefers-reduced-motion:reduce){#btnPhone.pulse::before{animation:none}}
 
 .dialog{position:fixed;z-index:6;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));max-width:620px;margin:0 auto;padding:22px 20px 18px;min-height:112px;cursor:pointer}
 .nameplate{position:absolute;top:-16px;left:16px;background:var(--rose);color:var(--white);border:3px solid var(--wood-dk);border-radius:10px;padding:2px 12px;font-family:var(--f-pixel);font-weight:700;font-size:14px;letter-spacing:.04em}
@@ -236,6 +244,10 @@ legend{font-family:var(--f-pixel);font-size:12px;letter-spacing:.06em;color:var(
     <button class="chip frame btn-chip off" id="btnMusic" aria-pressed="false">♪ Musik</button>
   </div>
   <div id="toast" class="toast frame" hidden></div>
+  <div id="phoneTip" class="frame" role="status" hidden>
+    <p>Semua info undangan (Acara, Cerita, Lokasi, Galeri, RSVP, Ucapan) bisa dibuka lagi kapan saja lewat <b>HP</b> di bawah ini.</p>
+    <div class="row"><button class="btn" type="button" id="tipOpen">Buka HP</button><button class="btn ghost" type="button" id="tipOk">Oke, paham</button></div>
+  </div>
   <div id="joy" aria-hidden="true"><div id="knob"></div></div>
   <div class="act">
     <button id="actLabel" class="actlabel frame" type="button" hidden>Lihat</button>
@@ -316,9 +328,9 @@ const W = {
     { name:'Akad Nikah', time:'08.00 – 10.00 WIB', start:'2027-07-10T08:00:00+07:00', end:'2027-07-10T10:00:00+07:00',
       place:'Masjid Al-Ikhlas, Kebayoran Baru, Jakarta Selatan', note:'Terbatas untuk keluarga dan kerabat dekat.' },
     { name:'Resepsi', time:'11.00 – 14.00 WIB', start:'2027-07-10T11:00:00+07:00', end:'2027-07-10T14:00:00+07:00',
-      place:'Gedung Serbaguna Melati, Jakarta Selatan', note:'' }
+      place:'Pullman Hotel, Jakarta', note:'' }
   ],
-  venue:{ name:'Gedung Serbaguna Melati', address:'Jl. Melati Raya No. 12, Kebayoran Baru, Jakarta Selatan', parking:'Parkir tersedia di basement gedung.' },
+  venue:{ name:'Pullman Hotel', address:'Jl. Melati Raya No. 12, Kebayoran Baru, Jakarta Selatan', parking:'Parkir tersedia di basement gedung.' },
   dresscode:'Nuansa pastel atau earth tone.',
   hashtag:'#AjiVaniaTumbuhBersama',
   wa:'6281234567890',
@@ -1226,7 +1238,7 @@ let walkTo = null, stuckT = 0, lastDist = 1e9;
 let started = false, zoom = 1, T = 0, camTarget = null, nearest = null;
 const sheetOpen = () => !$('#sheetWrap').hidden;
 const busy = () => !started || dlg.open || sheetOpen() || phoneOpen || !$('#lb').hidden;
-let phoneOpen = false, phoneMode = false, welcomeDone = false, welcomeQueued = false;
+let phoneOpen = false, phoneMode = false, welcomeDone = false, welcomeQueued = false, phoneUsed = false, tipShown = false, tipTimer = 0;
 
 function registerInteractions(){
   INTER.push({ key:'couple', x:0, z:-15.2, reach:2.6, label:'Ngobrol', run:coupleTalk });
@@ -1489,8 +1501,22 @@ function phoneDelta(){
   const btn = $('#btnPhone').getBoundingClientRect(), ph = $('#phone').getBoundingClientRect();
   return [ (btn.left + btn.width/2) - (ph.left + ph.width/2), (btn.top + btn.height/2) - (ph.top + ph.height/2) ];
 }
+function showPhoneTip(){
+  const t = $('#phoneTip'); t.hidden = false; tipShown = true;
+  anim(t, [{ opacity:0, transform:'translateY(12px) scale(.94)' }, { opacity:1, transform:'none' }], { duration:340, easing:'cubic-bezier(.2,.8,.3,1)' });
+  $('#btnPhone').classList.add('pulse');
+  clearTimeout(tipTimer); tipTimer = setTimeout(hidePhoneTip, 14000);
+}
+function hidePhoneTip(){
+  const t = $('#phoneTip'); clearTimeout(tipTimer); $('#btnPhone').classList.remove('pulse');
+  if (t.hidden) return;
+  const a = anim(t, [{ opacity:1 }, { opacity:0, transform:'translateY(8px)' }], { duration:200, easing:'ease-in' });
+  const done = () => { t.hidden = true; }; if (a) a.onfinish = done; else done();
+}
 function openPhone(){
   if (phoneOpen || !phoneMode) return;
+  hidePhoneTip();
+  if (!phoneUsed){ phoneUsed = true; store.set('phoneUsed', true); }
   phoneOpen = true; refreshPhone();
   $('#phoneWrap').hidden = false; refreshBusy();
   const [dx, dy] = phoneDelta();
@@ -1530,7 +1556,6 @@ function setPhoneMode(on, announce){
   updateBadge(); lastNearKey = '#';
   if (on && announce){
     anim($('#btnPhone'), [{ transform:'scale(0) rotate(-30deg)' }, { transform:'scale(1.18) rotate(8deg)', offset:.7 }, { transform:'scale(1) rotate(0)' }], { duration:560, easing:'cubic-bezier(.2,.8,.3,1)' });
-    toast('Undangan lengkap sekarang ada di HP-mu, tombol kanan bawah.', 3800);
   }
 }
 function updateBadge(){
@@ -1778,7 +1803,9 @@ function bindUI(){
   $('#btnA').addEventListener('click', () => { if (nearest && !busy()) nearest.run(); });
   $('#actLabel').addEventListener('click', () => { if (nearest && !busy()) nearest.run(); });
   buildPhone();
-  welcomeDone = !!store.get('welcomeDone', false); setPhoneMode(welcomeDone, false);
+  welcomeDone = !!store.get('welcomeDone', false); phoneUsed = !!store.get('phoneUsed', false); setPhoneMode(welcomeDone, false);
+  $('#tipOpen').addEventListener('click', () => { hidePhoneTip(); if (!busy()) openPhone(); });
+  $('#tipOk').addEventListener('click', hidePhoneTip);
   $('#sheetClose').addEventListener('click', closeSheet);
   $('#sheetWrap').addEventListener('click', e => { if (e.target.id === 'sheetWrap') closeSheet(); });
   $('#lbClose').addEventListener('click', () => { $('#lb').hidden = true; refreshBusy(); });
@@ -1970,6 +1997,7 @@ function update(dt){
     welcomeQueued = true;
     setTimeout(() => { welcomeQueued = false; if (inside && !welcomeDone && !busy()) openSheet('all', { welcome:true }); }, 900);
   }
+  if (phoneMode && !phoneUsed && !tipShown && started && !busy()) showPhoneTip();
   const fadeTarget = inside ? 0 : 1;
   if (extFade !== fadeTarget){ extFade = clamp(extFade + Math.sign(fadeTarget - extFade) * dt / .85, 0, 1); applyExtFade(extFade); }
   insideK += ((inside ? 1 : 0) - insideK) * Math.min(1, dt*2.4);
