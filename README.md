@@ -4,6 +4,8 @@ Undangan pernikahan berbentuk game 3D low poly ala Harvest Moon, berlatar hotel 
 
 Begitu pertama kali masuk Grand Ballroom, popup **Undangan** terbuka otomatis: satu popup yang bisa di-scroll dengan segmen berurutan **Acara → Cerita Kami → Lokasi → Galeri → RSVP → Ucapan** (navigasi segmen menempel di atas, segmen yang sudah terlihat ditandai ✓). Setelah popup ditutup, tombol kanan bawah berubah menjadi **HP**. HP berisi app untuk tiap segmen, app "Undangan" (popup lengkap), dan "Musik". Membuka HP dan app memakai animasi; menutup app kembali ke layar HP. Kopi (anjing) tidak ikut masuk ballroom, ia menunggu di depan pintu lobby.
 
+Di dalam ballroom juga ada **food stall** (Sate Ayam, Bakso, Es Puter) dan **meja buffet** di sisi kiri, serta **panggung band** live music di sisi kanan. Penjual, menu buffet, dan nama band diatur di `W.food` dan `W.band`. Tap stall untuk ambil makanan, tap buffet untuk lihat menu, tap band untuk menyalakan musik.
+
 Satu file statis (`index.html`, Three.js r128 dari CDN) plus satu Vercel function (`api/rsvp.js`). Tanpa build step. Mobile-first.
 
 ## Kontrol

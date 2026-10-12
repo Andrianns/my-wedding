@@ -340,7 +340,17 @@ const W = {
     { yr:'2025', title:'Lamaran', text:'Dengan restu dua keluarga, kami memutuskan untuk melangkah bersama.' },
     { yr:'2027', title:'Hari yang ditunggu', text:'Sekarang kami ingin merayakannya bersama kamu.' }
   ],
-  gallery:[ 'Senja pertama', 'Pendakian bareng', 'Kota malam hari', 'Musim hujan', 'Kebun teh', 'Hari lamaran' ]
+  gallery:[ 'Senja pertama', 'Pendakian bareng', 'Kota malam hari', 'Musim hujan', 'Kebun teh', 'Hari lamaran' ],
+  // hidangan & hiburan di ballroom (contoh)
+  food:{
+    stalls:[
+      { name:'Sate Ayam', vendor:'Penjual Sate', line:'Sate ayam bumbu kacang, baru diangkat dari panggangan. Silakan, masih hangat!' },
+      { name:'Bakso', vendor:'Penjual Bakso', line:'Bakso urat kuah kaldu sapi. Mau pakai sambal?' },
+      { name:'Es Puter', vendor:'Penjual Es Puter', line:'Es puter kelapa muda, segar buat penutup.' }
+    ],
+    buffet:[ 'Nasi Liwet', 'Ayam Bakar Madu', 'Rendang', 'Capcay Seafood', 'Sop Buntut', 'Gurame Asam Manis' ]
+  },
+  band:{ name:'Live Music' }
 };
 
 /* ---------- small utils ---------- */
@@ -514,6 +524,8 @@ function makeChibi(o){
     hr.rotation.x = -.42;
     if (o.long) mesh(box(.74,.62,.24), o.hair, 0, -.22, -.3, head);
   }
+  if (o.chef){ mesh(cyl(.27, .23, .42, 10), 0xffffff, 0, .5, 0, head); mesh(ico(.3, 1), 0xffffff, 0, .74, 0, head); }
+  if (o.apron){ mesh(box(.48, .5, .03), o.apron, 0, .64, .225, body); }
   if (o.veil){ const v = mesh(box(.8,1.0,.05), new THREE.MeshPhongMaterial({ color:0xffffff, transparent:true, opacity:.75, flatShading:true }), 0, -.25, -.45, head); v.rotation.x = .12; mesh(box(.54,.08,.1), 0xffffff, 0, .36, -.18, head); }
   if (o.bouquet){
     const bq = new THREE.Group(); bq.position.set(0,.66,.36); body.add(bq);
@@ -864,6 +876,188 @@ function buildForecourt(){
   const wb = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.0), new THREE.MeshBasicMaterial({ map:wt }));
   wb.position.set(ex, 1.75, ez + .2); wb.rotation.x = -.1; scene.add(wb);
   cc(ex, ez, .7);
+}
+
+/* ---------- sisi kiri: food stall (gubukan) + buffet, sisi kanan: band ---------- */
+const FB = { stalls:[], fx:[], band:[], notes:[], beams:[] };
+function signTex(text, bg, fg, w, h){
+  return canvasTex(w || 512, h || 128, (c, W2, H2) => {
+    c.fillStyle = bg; c.fillRect(0,0,W2,H2);
+    c.strokeStyle = '#d4af37'; c.lineWidth = 8; c.strokeRect(4,4,W2-8,H2-8);
+    c.fillStyle = fg; c.textAlign = 'center'; c.textBaseline = 'middle';
+    let size = Math.round(H2*.5); c.font = `800 ${size}px "Baloo 2","Nunito",sans-serif`;
+    while (c.measureText(text).width > W2 - 40 && size > 12){ size -= 2; c.font = `800 ${size}px "Baloo 2","Nunito",sans-serif`; }
+    c.fillText(text, W2/2, H2/2 + 4);
+  });
+}
+function stripeTex(col){
+  const t = canvasTex(128, 32, (c) => { for (let i=0;i<8;i++){ c.fillStyle = i%2 ? '#fffaf0' : col; c.fillRect(i*16, 0, 16, 32); } });
+  t.wrapS = THREE.RepeatWrapping; t.repeat.set(2, 1); return t;
+}
+function particleEmitter(x, y, z, color, n, size){
+  const pos = new Float32Array(n*3), ph = [];
+  for (let i=0;i<n;i++){ ph.push(Math.random(), Math.random()*Math.PI*2, .6 + Math.random()*.5); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(g, new THREE.PointsMaterial({ color, size, transparent:true, opacity:.55, depthWrite:false }));
+  p.userData = { x, y, z, ph }; scene.add(p); FB.fx.push(p); return p;
+}
+
+function buildFoodAndBand(){
+  const STZ = -1.8;
+  // ===== food stall / gubukan (depan-kiri, menghadap pintu) =====
+  const stallCols = ['#b23a53', '#e3a22a', '#3f86d0'];
+  W.food.stalls.slice(0, 3).forEach((st, i) => {
+    const x = -7.0 - i*3.2, z = STZ, col = stallCols[i % stallCols.length];
+    sb(box(2.3, .92, .75), 0x8a5a33, x, .46, z); sb(box(2.42, .07, .86), 0xf3e9d6, x, .955, z);
+    sb(box(2.36, .1, .79), COL.gold, x, .08, z);
+    for (const dx of [-1.15, 1.15]) for (const dz of [.38, -1.0]) sb(cyl(.05, .05, 2.55, 6), COL.gold, x + dx, 1.275, z + dz);
+    // kanopi bergaris
+    const aw = new THREE.Mesh(box(2.7, .07, 1.75), new THREE.MeshPhongMaterial({ map:stripeTex(col), shininess:5 }));
+    aw.position.set(x, 2.62, z - .3); aw.rotation.x = .12; aw.castShadow = true; scene.add(aw);
+    for (let k=0;k<9;k++) sb(new THREE.SphereGeometry(.13, 8, 6, 0, Math.PI*2, Math.PI/2, Math.PI/2), k%2 ? 0xfffaf0 : parseInt(col.slice(1), 16), x - 1.2 + k*.3, 2.56, z + .55);
+    // papan nama
+    sb(box(1.75, .55, .06), COL.gold, x, 3.12, z + .42);
+    const sp = new THREE.Mesh(new THREE.PlaneGeometry(1.65, .45), new THREE.MeshBasicMaterial({ map:signTex(st.name.toUpperCase(), col, '#ffffff', 512, 140) }));
+    sp.position.set(x, 3.12, z + .46); scene.add(sp);
+    const fp = new THREE.Mesh(new THREE.PlaneGeometry(1.9, .38), new THREE.MeshBasicMaterial({ map:signTex(st.name, '#fffaf0', '#3a2414', 512, 104) }));
+    fp.position.set(x, .55, z + .38); scene.add(fp);
+    // isi gerobak
+    for (let k=0;k<4;k++) sb(cyl(.13, .1, .05, 10), 0xffffff, x - .85 + (k%2)*.12, 1.01 + k*.05, z + .15);
+    if (i === 0){ // sate: panggangan + tusukan
+      sb(box(1.0, .18, .38), 0x2a2620, x + .35, 1.08, z - .1); sb(box(.94, .03, .32), 0xd9581f, x + .35, 1.18, z - .1);
+      for (let k=0;k<7;k++) sb(box(.04, .04, .42), 0x9b6a3c, x - .05 + k*.13, 1.22, z - .1);
+      particleEmitter(x + .35, 1.25, z - .1, 0xb9b3ab, 26, .22);
+    } else if (i === 1){ // bakso: panci kuah + mangkok
+      sb(cyl(.3, .26, .42, 14), 0xc9c9cf, x + .45, 1.2, z - .15); sb(cyl(.31, .31, .03, 14), 0x8a8a92, x + .45, 1.42, z - .15);
+      for (let k=0;k<3;k++) sb(cyl(.13, .08, .1, 10), 0xffffff, x - .2 + k*.28, 1.04, z + .2);
+      particleEmitter(x + .45, 1.45, z - .15, 0xffffff, 22, .2);
+    } else { // es puter: drum es + cone
+      sb(cyl(.3, .3, .55, 14), 0x3f86d0, x + .45, 1.26, z - .15); sb(cyl(.32, .32, .06, 14), 0xffffff, x + .45, 1.55, z - .15);
+      for (let k=0;k<4;k++){ sb(new THREE.ConeGeometry(.06, .2, 8), 0xe3b46b, x - .3 + k*.2, 1.06, z + .2, { rx:Math.PI }); sb(ico(.08, 1), [0xffd6e0, 0xfff1b8, 0xd4f0e8, 0xffffff][k], x - .3 + k*.2, 1.2, z + .2); }
+    }
+    // penjual
+    const v = makeChibi({ skin:[0xe6b98f, 0xd4a07a, 0xf2c9a0][i], hair:0x2a1a10, shirt:0xffffff, sleeve:0xffffff, pants:0x2d3a5a, chef:true, apron:parseInt(col.slice(1), 16) });
+    v.g.position.set(x - .2, 0, z - .55); FB.stalls.push({ chibi:v, x, z, st, i });
+    cb(x, z - .3, 1.25, .95);
+  });
+
+  // ===== meja buffet di sepanjang dinding kiri =====
+  const bx = -14.6, bz = -9.5, bl = 9.4;
+  sb(box(1.1, .8, bl), COL.white, bx, .4, bz); sb(box(1.16, .06, bl + .06), COL.gold, bx, .74, bz);
+  sb(box(.04, .7, bl), 0xf3c9cf, bx + .57, .4, bz);
+  const nDish = 7;
+  for (let k=0;k<nDish;k++){
+    const z = bz - bl/2 + .75 + k*(bl - 1.5)/(nDish - 1);
+    sb(box(.62, .12, .5), 0xc9c9cf, bx, .91, z); sb(box(.5, .04, .42), [0xe8a24a, 0xb5532f, 0x6b3a22, 0x7fb34f, 0xd98a3a, 0xc94f3c, 0xf1e2b0][k], bx, .99, z);
+    if (k % 2 === 0) sb(new THREE.SphereGeometry(.27, 12, 6, 0, Math.PI*2, 0, Math.PI/2), 0xd9d9e0, bx, .99, z);
+    sb(box(.05, .05, .36), 0xd9d9e0, bx + .36, 1.0, z, { ry:.3 });
+  }
+  for (const z of [bz - bl/2 + .1, bz + bl/2 - .1]){ sb(cyl(.1, .14, .3, 8), COL.gold, bx, .98, z); for (let k=0;k<5;k++){ const a = k/5*Math.PI*2; sb(ico(.13), FLOWERS[k], bx + Math.cos(a)*.13, 1.22, z + Math.sin(a)*.13); } }
+  const bs = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .42), new THREE.MeshBasicMaterial({ map:signTex('BUFFET', '#23304f', '#ffd98a', 512, 136) }));
+  bs.position.set(bx + .2, 1.75, bz - bl/2 - .15); bs.rotation.y = Math.PI/4; scene.add(bs);
+  sb(cyl(.03, .03, 1.5, 5), COL.gold, bx + .2, .75, bz - bl/2 - .2);
+  cb(bx, bz, .62, bl/2 + .05);
+
+  // ===== panggung band (sisi kanan) =====
+  const sx = 13.95, sz = -8.6, sw = 3.4, sd = 9.2;
+  sb(box(sw, .45, sd), 0x2a2230, sx, .225, sz); sb(box(sw + .06, .06, sd + .06), COL.gold, sx, .42, sz);
+  sb(box(sw - .3, .02, sd - .4), 0x3a2d44, sx, .46, sz);
+  cb(sx, sz, sw/2 + .05, sd/2 + .05);
+  // speaker
+  for (const z of [sz + sd/2 - .45, sz - sd/2 + .45]){
+    sb(box(.7, 1.3, .62), 0x16161b, sx - sw/2 + .45, 1.1, z);
+    for (const y of [.8, 1.35]) sb(cyl(.2, .2, .04, 14), 0x3a3a44, sx - sw/2 + .09, 1.1 + (y - 1.1), z, { rz:Math.PI/2 });
+  }
+  // truss + lampu panggung
+  const tx = sx - sw/2 + .25;
+  for (const z of [sz + sd/2 - .15, sz - sd/2 + .15]) sb(cyl(.07, .07, 4.9, 6), 0x3a3a44, tx, 2.45, z);
+  sb(box(.14, .14, sd - .3), 0x3a3a44, tx, 4.85, sz);
+  const beamGeo = new THREE.ConeGeometry(.75, 4.2, 16, 1, true); beamGeo.translate(0, -2.1, 0);
+  [-3.2, -1.1, 1.1, 3.2].forEach((dz, k) => {
+    sb(cyl(.13, .1, .3, 10), 0x16161b, tx, 4.62, sz + dz);
+    const m = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:.16, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide }));
+    m.position.set(tx, 4.5, sz + dz); m.rotation.z = .32; scene.add(m); FB.beams.push(m);
+  });
+  // papan LIVE MUSIC di dinding
+  const lm = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.05), new THREE.MeshBasicMaterial({ map:signTex(W.band.name.toUpperCase(), '#1b1b24', '#ffd98a', 768, 192) }));
+  lm.position.set(BLD.x1 - .42, 4.5, sz); lm.rotation.y = -Math.PI/2; scene.add(lm);
+  // drum kit
+  const dkx = sx + .4, dkz = sz, top = .45;
+  sb(cyl(.4, .4, .36, 16), 0xf6efe2, dkx, top + .42, dkz, { rz:Math.PI/2 }); sb(cyl(.41, .41, .06, 16), 0xb23a53, dkx - .19, top + .42, dkz, { rz:Math.PI/2 });
+  for (const dz of [-.35, .35]) sb(cyl(.17, .17, .18, 12), 0xb23a53, dkx - .05, top + .92, dkz + dz);
+  sb(cyl(.2, .2, .12, 12), 0xd9d9e0, dkx - .45, top + .62, dkz + .55);
+  for (const dz of [-.75, .8]){ sb(cyl(.02, .02, 1.2, 5), 0xc9c9cf, dkx - .2, top + .6, dkz + dz); sb(cyl(.32, .32, .02, 16), COL.gold, dkx - .2, top + 1.2, dkz + dz, { rz:-.15 }); }
+  // keyboard
+  const kbx = sx - .05, kbz = sz - 2.7;
+  sb(box(.05, .9, .05), 0x2a2a30, kbx, top + .45, kbz - .35, { rx:.4 }); sb(box(.05, .9, .05), 0x2a2a30, kbx, top + .45, kbz + .35, { rx:-.4 });
+  sb(box(.42, .1, 1.35), 0x16161b, kbx, top + .92, kbz); sb(box(.18, .02, 1.25), 0xffffff, kbx - .1, top + .98, kbz);
+  // mic stand
+  const mx = sx - sw/2 + .55;
+  sb(cyl(.02, .02, 1.45, 5), 0xc9c9cf, mx, top + .72, sz); sb(cyl(.18, .18, .03, 10), 0x2a2a30, mx, top + .02, sz);
+  sb(ico(.07, 1), 0x2a2a30, mx, top + 1.48, sz);
+  // personel band (menghadap ruangan = -x)
+  const face = -Math.PI/2;
+  const mk = (o, x, z, role) => { const c = makeChibi(o); c.g.position.set(x, top, z); c.g.rotation.y = face; c.role = role; c.ph = Math.random()*6; FB.band.push(c); return c; };
+  mk({ skin:0xf3cfab, hair:0x3a2416, long:true, shirt:0xb23a53, dress:0xb23a53 }, mx + .45, sz, 'vocal');
+  const g = mk({ skin:0xe6b98f, hair:0x1d1d1d, shirt:0x1b1b24, sleeve:0x1b1b24, pants:0x2d3a5a, shoes:0x1e1e24 }, sx - .2, sz + 2.4, 'guitar');
+  const gb = new THREE.Group(); gb.position.set(.05, .72, .3); gb.rotation.z = .55; g.body.add(gb);
+  mesh(box(.42, .5, .1), 0xc9802f, 0, -.05, 0, gb); mesh(cyl(.09, .09, .11, 10), 0x2a1a10, 0, -.02, .01, gb).rotation.x = Math.PI/2; mesh(box(.07, .62, .05), 0x3a2a1c, 0, .52, 0, gb);
+  const d = mk({ skin:0xd4a07a, hair:0x2a1a10, shirt:0xffffff, sleeve:0xffffff, pants:0x1b1b24, shoes:0x1e1e24, cap:0x1b1b24 }, dkx + .65, dkz, 'drum');
+  d.g.position.y = top - .22;
+  sb(cyl(.22, .2, .4, 10), 0x2a2a30, dkx + .65, top + .2, dkz);
+  mk({ skin:0xf2c9a0, hair:0x5a3a22, shirt:0x23304f, sleeve:0x23304f, pants:0x1b1b24, shoes:0x1e1e24 }, kbx + .55, kbz, 'keys');
+  // not balok melayang
+  const noteTex = canvasTex(64, 64, (c) => { c.clearRect(0,0,64,64); c.fillStyle = '#ffd98a'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '700 52px sans-serif'; c.fillText('♪', 32, 34); });
+  for (let k=0;k<6;k++){ const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:noteTex, transparent:true, depthWrite:false })); s.scale.set(.5, .5, 1); s.userData.t = k/6; scene.add(s); FB.notes.push(s); }
+  FB.band.center = { x:sx - .4, z:sz };
+}
+
+function animateFoodBand(dt){
+  // asap sate / uap bakso
+  for (const p of FB.fx){
+    const a = p.geometry.attributes.position, u = p.userData;
+    for (let i=0;i<a.count;i++){
+      const t = (T*.35*u.ph[i*3+2] + u.ph[i*3]) % 1, ang = u.ph[i*3+1];
+      a.setXYZ(i, u.x + Math.cos(ang)*.18*t + Math.sin(T + i)*.05, u.y + t*1.5, u.z + Math.sin(ang)*.18*t);
+    }
+    a.needsUpdate = true;
+  }
+  // penjual: idle + menoleh ke tamu yang dekat
+  const pp = player.g.position;
+  for (const s of FB.stalls){
+    const c = s.chibi; animChibi(c, false, dt, T + s.i);
+    const near = Math.hypot(pp.x - c.g.position.x, pp.z - c.g.position.z) < 5;
+    c.face = lerpAng(c.face, near ? Math.atan2(pp.x - c.g.position.x, pp.z - c.g.position.z) : 0, Math.min(1, dt*3)); c.g.rotation.y = c.face;
+  }
+  // band: goyang saat musik nyala
+  const on = musicOn, beat = T * (on ? 7.4 : 2);
+  for (const c of FB.band){
+    const s = Math.sin(beat + c.ph);
+    c.body.position.y = on ? Math.abs(s) * .06 : Math.sin(T*1.6 + c.ph)*.012;
+    c.head.rotation.z = on ? Math.sin(beat*.5 + c.ph)*.12 : 0;
+    if (c.role === 'drum'){ c.aL.rotation.x = on ? -1.0 + Math.sin(beat*2)*.45 : -.6; c.aR.rotation.x = on ? -1.0 + Math.sin(beat*2 + Math.PI)*.45 : -.6; }
+    else if (c.role === 'guitar'){ c.aR.rotation.x = on ? -.7 + Math.sin(beat*2.2)*.35 : -.5; c.aL.rotation.x = -1.1; c.aL.rotation.z = .4; }
+    else if (c.role === 'keys'){ c.aL.rotation.x = -1.1 + (on ? Math.sin(beat*1.7)*.15 : 0); c.aR.rotation.x = -1.1 + (on ? Math.sin(beat*1.9 + 1)*.15 : 0); }
+    else if (c.role === 'vocal'){ c.aR.rotation.x = -1.35; c.aL.rotation.x = on ? -.4 + Math.sin(beat*.5)*.3 : 0; }
+  }
+  // lampu panggung berganti warna
+  FB.beams.forEach((b, k) => { b.material.color.setHSL(((T*.08) + k*.22) % 1, .8, .6); b.material.opacity = on ? .14 + Math.max(0, Math.sin(beat*.5 + k))*.12 : .08; });
+  // not balok
+  FB.notes.forEach((n, k) => {
+    n.userData.t = (n.userData.t + dt*.22) % 1; const t = n.userData.t;
+    n.visible = on;
+    n.position.set(FB.band.center.x - t*1.6, 1.6 + t*2.6, FB.band.center.z + Math.sin(t*6 + k*1.7)*1.4);
+    n.material.opacity = Math.sin(t*Math.PI);
+  });
+}
+function stallTalk(s){ return () => { say(s.st.vendor, [s.st.line]); toast(s.st.name + ' diambil. Selamat makan!', 2200); }; }
+function buffetTalk(){ say('Buffet', ['Menu hari ini: ' + W.food.buffet.join(', ') + '.', 'Silakan ambil piring dan nikmati hidangannya!']); }
+function bandTalk(){
+  const was = musicOn; if (!musicOn) setMusic(true);
+  say('Vokalis ' + W.band.name, [
+    'Halo! Lagu-lagu malam ini spesial buat ' + COUPLE + '.',
+    was ? 'Yuk ikut goyang, jangan cuma duduk!' : 'Musiknya kami nyalakan ya. Yuk ikut goyang!'
+  ]);
 }
 
 /* doorman di depan lobby */
@@ -1244,6 +1438,9 @@ function registerInteractions(){
   INTER.push({ key:'couple', x:0, z:-15.2, reach:2.6, label:'Ngobrol', run:coupleTalk });
   INTER.push({ key:'sign', x:3.9, z:24.4, reach:2.2, label:'Baca Papan', run:signTalk });
   INTER.push({ key:'tv', x:11, z:-19.2, reach:2.8, label:'Lihat Ucapan', run:() => openSheet('ucapan') });
+  FB.stalls.forEach(s => INTER.push({ key:'stall:' + s.i, x:s.x, z:s.z + 1.3, reach:2.0, label:'Ambil ' + s.st.name, run:stallTalk(s) }));
+  INTER.push({ key:'buffet', x:-13.3, z:-9.5, reach:2.3, label:'Lihat Menu', run:buffetTalk });
+  INTER.push({ key:'band', x:11.75, z:-8.6, reach:2.4, label:'Sapa Band', run:bandTalk });
   INTER.push({ key:'doorman', pos:() => doorman.g.position, reach:2.2, label:'Sapa', run:doormanTalk });
   INTER.push({ key:'dog', pos:() => dog.g.position, reach:1.6, label:'Elus Kopi', run:petDog });
 }
@@ -1878,7 +2075,7 @@ function handleTap(cx, cy){
   const hit = ray.intersectObjects(PICK, false)[0];
   if (hit){
     const it = INTER.find(q => q.key === hit.object.userData.inter);
-    const interior = it && (it.key.startsWith('p:') || it.key === 'tv' || it.key === 'couple');
+    const interior = it && (it.key.startsWith('p:') || it.key.startsWith('stall:') || ['tv', 'couple', 'buffet', 'band'].includes(it.key));
     if (it && interior && inside && (it.key !== 'couple')){ it.run(); return; }
     if (it && !(interior && !inside)){
       const p = interPos(it), pp = player.g.position;
@@ -1968,6 +2165,7 @@ function update(dt){
   couple.ring.material.opacity = .35 + Math.sin(T*3)*.15;
 
   animateSeats(dt);
+  animateFoodBand(dt);
 
   // petals
   const pa = petals.geometry.attributes.position, sp = petals.userData.sp;
@@ -2097,11 +2295,11 @@ function boot(){
   sun.shadow.mapSize.set(1024, 1024); const sc = sun.shadow.camera; sc.left = -30; sc.right = 30; sc.top = 30; sc.bottom = -30; sc.near = 1; sc.far = 100;
   sun.shadow.bias = -.0008; sun.shadow.normalBias = .03; scene.add(sun);
 
-  buildGround(); buildBoundary(); buildBuilding(); buildForecourt(); buildDoorman(); buildInterior(); buildGuests();
+  buildGround(); buildBoundary(); buildBuilding(); buildForecourt(); buildDoorman(); buildInterior(); buildFoodAndBand(); buildGuests();
   buildTrees(); scatter(); flushSB(); applyExtFade(1);
   buildAnimals(); buildPlayer();
-  [['couple', 0, -18.5, 1.6, 3.6, 0], ['sign', 3.9, 23.3, 1.1, 2.6, 0], ['tv', 11, -21.3, 3.8, 4.4, 1.75], ['doorman', 4.7, BLD.z1 + 1.5, .6, 2.2, 0]].forEach(([k, x, z, w, h, y0]) => {
-    const pr = new THREE.Mesh(box(w*2, h, 1.6), new THREE.MeshBasicMaterial()); pr.visible = false; pr.position.set(x, y0 + h/2, z); pr.userData.inter = k; scene.add(pr); PICK.push(pr);
+  [['couple', 0, -18.5, 1.6, 3.6, 0], ['sign', 3.9, 23.3, 1.1, 2.6, 0], ['tv', 11, -21.3, 3.8, 4.4, 1.75], ['doorman', 4.7, BLD.z1 + 1.5, .6, 2.2, 0], ['buffet', -14.6, -9.5, .6, 1.6, 0], ['band', 13.95, -8.6, 1.7, 3, .45]].concat(FB.stalls.map(s => ['stall:' + s.i, s.x, s.z - .3, 1.2, 3.2, 0])).forEach(([k, x, z, w, h, y0]) => {
+    const pr = new THREE.Mesh(box(w*2, h, k === 'buffet' ? 9.4 : (k === 'band' ? 9 : 1.6)), new THREE.MeshBasicMaterial()); pr.visible = false; pr.position.set(x, y0 + h/2, z); pr.userData.inter = k; scene.add(pr); PICK.push(pr);
   });
   registerInteractions();
   camTarget = V3(player.g.position.x, 0, player.g.position.z);
