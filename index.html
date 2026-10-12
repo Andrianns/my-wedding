@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Undangan pernikahan berbentuk game 3D. Masuk ke gedung resepsi dan kunjungi pilar Acara, Lokasi, Galeri, Cerita, RSVP, dan Ucapan.">
+<meta name="description" content="Undangan pernikahan berbentuk game 3D di hotel mewah. Masuk ke Grand Ballroom, isi RSVP, lihat jadwal acara, lokasi, galeri, cerita, dan ucapan tamu.">
 <meta name="theme-color" content="#a7dcf2">
 <title>Undangan Pernikahan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -191,7 +191,7 @@ legend{font-family:var(--f-pixel);font-size:12px;letter-spacing:.06em;color:var(
   </header>
   <div class="tr">
     <span class="chip frame" id="chipCd">H-0</span>
-    <span class="chip frame" id="chipProg" title="Pilar yang sudah dikunjungi"><span class="dots" id="dots"></span><span id="progTxt">0/5</span></span>
+    <span class="chip frame" id="chipProg" title="Info yang sudah dilihat"><span class="dots" id="dots"></span><span id="progTxt">0/5</span></span>
     <button class="chip frame btn-chip off" id="btnMusic" aria-pressed="false">♪ Musik</button>
   </div>
   <div id="toast" class="toast frame" hidden></div>
@@ -312,14 +312,15 @@ function copyText(text, btn){
   try { navigator.clipboard.writeText(text).then(done, fallback); } catch(e) { fallback(); }
 }
 
-/* ---------- pillars (titik info di peta) ---------- */
+/* ---------- titik info (objek di foyer) ---------- */
 const PILLARS = [
-  { id:'rsvp',   name:'RSVP',        act:'Isi RSVP',      color:0x8d5bc9, css:'#8d5bc9', x:-12.6, z:-1.4 },
-  { id:'acara',  name:'Acara',       act:'Lihat Acara',   color:0xe0566f, css:'#e0566f', x: 12.6, z:-1.4 },
-  { id:'galeri', name:'Galeri',      act:'Buka Galeri',   color:0xe3a22a, css:'#e3a22a', x:-13.6, z:-8.6 },
-  { id:'lokasi', name:'Lokasi',      act:'Lihat Lokasi',  color:0x3f86d0, css:'#3f86d0', x: 13.6, z:-8.6 },
-  { id:'cerita', name:'Cerita Kami', act:'Baca Cerita',   color:0x4f9a3a, css:'#4f9a3a', x:-13.6, z:-15.2 },
-  { id:'ucapan', name:'Ucapan',      act:'Baca Ucapan',   color:0x2a9d8f, css:'#2a9d8f', x: 13.6, z:-15.2 }
+  // foyer: kiri-kanan red carpet tepat setelah pintu masuk, menghadap lorong
+  { id:'rsvp',   name:'RSVP',        act:'Isi RSVP',      color:0x8d5bc9, css:'#8d5bc9', x:-3.7, z:  .7, ry: .62 },
+  { id:'acara',  name:'Acara',       act:'Lihat Acara',   color:0xe0566f, css:'#e0566f', x: 3.7, z:  .7, ry:-.62 },
+  { id:'lokasi', name:'Lokasi',      act:'Lihat Lokasi',  color:0x3f86d0, css:'#3f86d0', x:-4.1, z:-1.5, ry: .62 },
+  { id:'galeri', name:'Galeri',      act:'Buka Galeri',   color:0xe3a22a, css:'#e3a22a', x: 4.1, z:-1.5, ry:-.62 },
+  { id:'cerita', name:'Cerita Kami', act:'Baca Cerita',   color:0x4f9a3a, css:'#4f9a3a', x:-3.7, z:-3.7, ry: .62 },
+  { id:'ucapan', name:'Ucapan',      act:'Baca Ucapan',   color:0x2a9d8f, css:'#2a9d8f', x: 3.7, z:-3.7, ry:-.62 }
 ];
 let visited = store.get('visited', []);
 if (!Array.isArray(visited)) visited = [];
@@ -875,7 +876,7 @@ let petals, couple = {}, chandGlows = [];
 function buildInterior(){
   const { frame, cushion } = chairGeos();
   // 10 meja bundar x 5 kursi = 50 kursi tamu
-  const TABLES = [[-4.8,-5],[4.8,-5],[-9.4,-5],[9.4,-5],[-4.8,-10.2],[4.8,-10.2],[-9.4,-10.2],[9.4,-10.2],[-9.4,-14.8],[9.4,-14.8]];
+  const TABLES = [[-4.8,-6.8],[4.8,-6.8],[-9.4,-6.8],[9.4,-6.8],[-4.8,-11.6],[4.8,-11.6],[-9.4,-11.6],[9.4,-11.6],[-9.4,-16],[9.4,-16]];
   TABLES.forEach(([tx, tz], ti) => {
     sb(cyl(1.05, 1.2, .76, 18), COL.white, tx, .38, tz); sb(cyl(1.12, 1.12, .04, 18), 0xf3e9d6, tx, .78, tz);
     const tall = ti % 2 === 0;
@@ -900,7 +901,7 @@ function buildInterior(){
   SEATPOS.sort((a, b) => a.z - b.z || Math.abs(a.x) - Math.abs(b.x) || a.x - b.x);
 
   // standing flower kristal di lorong
-  for (const z of [-2.2, -7.6, -12.8]) for (const sx of [-1, 1]){
+  for (const z of [-5.4, -9.6, -13.8]) for (const sx of [-1, 1]){
     const x = sx * 1.8;
     sb(cyl(.18, .24, .08, 10), COL.gold, x, .04, z); sb(cyl(.04, .04, 1.4, 6), COL.gold, x, .74, z); sb(cyl(.28, .1, .2, 10), COL.gold, x, 1.5, z);
     sb(jitter(ico(.42, 1), .04), sx < 0 ? 0xf6c9d2 : 0xffffff, x, 1.85, z);
@@ -954,11 +955,6 @@ function buildInterior(){
   ledTV = { ctx:tvC.getContext('2d'), tex:tvTex, mesh:scr };
   drawTV(0);
 
-  // meja buku tamu + kotak angpao dekat pintu
-  sb(box(2.4, .8, .8), COL.white, -9.6, .4, .3); sb(box(2.5, .06, .85), COL.gold, -9.6, .82, .3);
-  sb(box(.7, .05, .5), 0xb23a53, -10.2, .87, .3); sb(box(.66, .02, .46), 0xfdfbf6, -10.2, .9, .3);
-  sb(box(.55, .55, .45), COL.gold, -9.0, 1.1, .3); sb(box(.3, .03, .06), 0x3a2414, -9.0, 1.39, .3);
-  cb(-9.6, .3, 1.25, .45);
 
   // chandelier kristal
   const chand = (x, y, z, s) => {
@@ -970,7 +966,7 @@ function buildInterior(){
     const cm = new THREE.Mesh(ico(.24, 1), crystal); cm.position.y = -.3; g.add(cm);
     chandGlows.push(glowSprite(0, -.2, 0, 2.6*s, g));
   };
-  chand(-7.1, 6.3, -7.6, .62); chand(7.1, 6.3, -7.6, .62); chand(-7.1, 6.3, -12.6, .55); chand(7.1, 6.3, -12.6, .55);
+  chand(-7.1, 6.3, -9.2, .62); chand(7.1, 6.3, -9.2, .62); chand(-7.1, 6.3, -13.9, .55); chand(7.1, 6.3, -13.9, .55);
 
   // pengantin
   couple.groom = makeChibi({ skin:0xf0c9a0, hair:0x2a1a10, shirt:0x2d3a5a, sleeve:0x2d3a5a, pants:0x2d3a5a, shoes:0x1e1e24, front:0xffffff, tie:0x1e1e24 });
@@ -1069,58 +1065,131 @@ function glowRing(color, x, z){
   r.rotation.x = -Math.PI/2; r.position.set(x, .05, z); scene.add(r); return r;
 }
 
-/* pillars */
-function pillarIcon(id){
-  const g = new THREE.Group();
-  if (id === 'acara'){
-    mesh(box(1,1,.24), 0xffffff, 0,0,0,g); mesh(box(1.02,.3,.26), 0xe0566f, 0,.38,0,g);
-    mesh(cyl(.05,.05,.25,6), 0x4f2e18, -.28,.58,0,g); mesh(cyl(.05,.05,.25,6), 0x4f2e18, .28,.58,0,g);
-    const day = W.dateISO.slice(8,10);
-    const tex = canvasTex(128,96,(c)=>{ c.fillStyle='#ffffff'; c.fillRect(0,0,128,96); c.fillStyle='#3a2414'; c.textAlign='center'; c.font='800 64px "Baloo 2",sans-serif'; c.fillText(day,64,74); });
-    const f = new THREE.Mesh(new THREE.PlaneGeometry(.92,.66), new THREE.MeshBasicMaterial({ map:tex })); f.position.set(0,-.12,.13); g.add(f);
-    const b = f.clone(); b.position.z = -.13; b.rotation.y = Math.PI; g.add(b);
-  } else if (id === 'lokasi'){
-    mesh(new THREE.SphereGeometry(.45,12,8), 0x3f86d0, 0,.2,0,g);
-    const c = mesh(new THREE.ConeGeometry(.42,.85,12), 0x3f86d0, 0,-.42,0,g); c.rotation.x = Math.PI;
-    mesh(new THREE.SphereGeometry(.18,10,6), 0xffffff, 0,.22,.33,g); mesh(new THREE.SphereGeometry(.18,10,6), 0xffffff, 0,.22,-.33,g);
-  } else if (id === 'galeri'){
-    mesh(box(1.05,.72,.46), 0x3a3a44, 0,0,0,g); mesh(box(.36,.18,.4), 0x3a3a44, -.22,.44,0,g);
-    const l = mesh(cyl(.25,.25,.28,14), 0x1d1d24, 0,0,.3,g); l.rotation.x = Math.PI/2;
-    const l2 = mesh(cyl(.25,.25,.28,14), 0x1d1d24, 0,0,-.3,g); l2.rotation.x = Math.PI/2;
-    mesh(new THREE.SphereGeometry(.14,10,6), 0x7fc3f0, 0,0,.45,g); mesh(new THREE.SphereGeometry(.14,10,6), 0x7fc3f0, 0,0,-.45,g);
-    mesh(box(.16,.12,.48), 0xe3a22a, .34,.42,0,g);
-  } else if (id === 'cerita'){
-    const L = mesh(box(.62,.07,.9), 0xfdf6e3, -.31,0,0,g); L.rotation.z = .3;
-    const Rr = mesh(box(.62,.07,.9), 0xfdf6e3, .31,0,0,g); Rr.rotation.z = -.3;
-    const cL = mesh(box(.66,.05,.94), 0x4f9a3a, -.31,-.06,0,g); cL.rotation.z = .3;
-    const cR = mesh(box(.66,.05,.94), 0x4f9a3a, .31,-.06,0,g); cR.rotation.z = -.3;
-    g.rotation.x = .9;
-  } else if (id === 'ucapan'){
-    mesh(box(1.15,.78,.26), 0xffffff, 0,.1,0,g);
-    const tail = mesh(new THREE.ConeGeometry(.16,.36,4), 0xffffff, -.3,-.38,0,g); tail.rotation.z = Math.PI + .5;
-    for (const dx of [-.3, 0, .3]) for (const dz of [-.14, .14]) mesh(new THREE.SphereGeometry(.09,8,6), 0x2a9d8f, dx,.1,dz,g);
-  } else {
-    mesh(box(1.1,.72,.12), 0xfdf1dc, 0,0,0,g);
-    const fl = mesh(prism(1.1,.12,.36), 0xf0dfc0, 0,.36,0,g); fl.rotation.x = Math.PI; fl.position.y = .36;
-    mesh(new THREE.CylinderGeometry(.16,.16,.16,10), 0x8d5bc9, 0,.05,.08,g).rotation.x = Math.PI/2;
-    mesh(new THREE.CylinderGeometry(.16,.16,.16,10), 0x8d5bc9, 0,.05,-.08,g).rotation.x = Math.PI/2;
-  }
-  return g;
-}
+/* titik info: objek nyata di foyer, kiri-kanan red carpet setelah pintu masuk */
 const PICK = [];
+function infoTex(w, h, title, accent, body){
+  return canvasTex(w, h, (c) => {
+    c.fillStyle = '#fbf6ec'; c.fillRect(0,0,w,h);
+    c.strokeStyle = '#c9a646'; c.lineWidth = 8; c.strokeRect(8,8,w-16,h-16);
+    c.fillStyle = accent; c.fillRect(8, 8, w-16, 70);
+    c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = '700 40px "Pixelify Sans","Baloo 2",monospace'; c.fillText(title, w/2, 45);
+    c.textBaseline = 'alphabetic';
+    if (body) body(c, w, h);
+  });
+}
+function stationModel(p, g){
+  const gold = COL.gold, dark = 0x2a2620;
+  if (p.id === 'rsvp'){
+    // meja penerima tamu: buku tamu + kotak angpao
+    mesh(box(2.1, .8, .8), COL.white, 0, .4, 0, g); mesh(box(2.18, .05, .86), gold, 0, .82, 0, g);
+    mesh(box(2.12, .1, .02), gold, 0, .62, .41, g);
+    const sign = canvasTex(512, 96, (c) => { c.fillStyle = '#6e1f2f'; c.fillRect(0,0,512,96); c.fillStyle = '#ffd98a'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '800 46px "Baloo 2","Nunito",sans-serif'; c.fillText('BUKU TAMU · RSVP', 256, 52); });
+    const sp = new THREE.Mesh(new THREE.PlaneGeometry(1.7, .32), new THREE.MeshBasicMaterial({ map:sign })); sp.position.set(0, .42, .405); g.add(sp);
+    mesh(box(.9, .04, .6), 0x8d5bc9, -.35, .86, .02, g);
+    const pl = mesh(box(.42, .03, .56), 0xfffdf6, -.56, .9, .02, g); pl.rotation.z = .06;
+    const pr = mesh(box(.42, .03, .56), 0xfffdf6, -.14, .9, .02, g); pr.rotation.z = -.06;
+    const pen = mesh(cyl(.02, .02, .4, 5), 0x1e1e24, -.1, .94, .16, g); pen.rotation.z = Math.PI/2; pen.rotation.y = .5;
+    mesh(box(.55, .55, .45), gold, .6, 1.11, -.05, g); mesh(box(.32, .03, .06), 0x3a2414, .6, 1.4, -.05, g);
+    mesh(box(.57, .08, .47), 0xb8902a, .6, 1.0, -.05, g);
+    mesh(cyl(.08, .1, .22, 8), 0xffffff, .95, .95, -.25, g);
+    for (let k=0;k<4;k++) mesh(ico(.09), FLOWERS[k], .95 + (k%2 ? .06 : -.06), 1.12 + (k>1 ? .06 : 0), -.25, g);
+  } else if (p.id === 'acara'){
+    // roll-up banner jadwal acara
+    const tex = infoTex(256, 512, 'ACARA', '#e0566f', (c, w) => {
+      c.fillStyle = '#3a2414'; c.textAlign = 'center';
+      c.font = '800 30px "Baloo 2","Nunito",sans-serif'; c.fillText(W.dateLabel.split(', ')[0] || '', w/2, 130);
+      c.font = '800 34px "Baloo 2","Nunito",sans-serif'; c.fillText((W.dateLabel.split(', ')[1] || W.dateLabel), w/2, 170);
+      let y = 240;
+      for (const ev of W.events){
+        c.fillStyle = '#b23a53'; c.font = '800 30px "Baloo 2","Nunito",sans-serif'; c.fillText(ev.name, w/2, y);
+        c.fillStyle = '#5a4030'; c.font = '700 24px "Nunito",sans-serif'; c.fillText(ev.time, w/2, y + 34);
+        y += 110;
+      }
+      c.fillStyle = '#c9a646'; c.fillRect(60, 470, w - 120, 4);
+    });
+    mesh(box(1.2, .1, .36), 0xc9c9cf, 0, .05, 0, g);
+    mesh(box(1.14, 2.36, .03), dark, 0, 1.3, -.02, g);
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.3), new THREE.MeshBasicMaterial({ map:tex })); b.position.set(0, 1.3, .0); g.add(b);
+    mesh(box(1.18, .05, .05), 0xc9c9cf, 0, 2.47, -.01, g);
+  } else if (p.id === 'lokasi'){
+    // papan peta di easel
+    const mc = document.createElement('canvas'); mc.width = 640; mc.height = 360; drawMap(mc);
+    const tex = new THREE.CanvasTexture(mc);
+    const legL = mesh(box(.07, 2.3, .07), 0x3a2a1c, -.6, 1.1, .08, g); legL.rotation.z = .1;
+    const legR = mesh(box(.07, 2.3, .07), 0x3a2a1c, .6, 1.1, .08, g); legR.rotation.z = -.1;
+    const legB = mesh(box(.07, 2.2, .07), 0x3a2a1c, 0, 1.05, -.42, g); legB.rotation.x = -.35;
+    mesh(box(1.95, 1.2, .07), gold, 0, 1.55, .14, g);
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(1.84, 1.04), new THREE.MeshBasicMaterial({ map:tex })); b.position.set(0, 1.55, .18); g.add(b);
+    const head = canvasTex(256, 64, (c) => { c.fillStyle = '#3f86d0'; c.fillRect(0,0,256,64); c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '700 36px "Pixelify Sans",monospace'; c.fillText('LOKASI', 128, 34); });
+    const hp = new THREE.Mesh(new THREE.PlaneGeometry(.9, .24), new THREE.MeshBasicMaterial({ map:head })); hp.position.set(0, 2.27, .18); g.add(hp);
+    mesh(box(.04, .3, .04), gold, -.44, 2.18, .16, g); mesh(box(.04, .3, .04), gold, .44, 2.18, .16, g);
+  } else if (p.id === 'galeri'){
+    // photo wall
+    const tex = canvasTex(512, 384, (c) => {
+      c.fillStyle = '#23304f'; c.fillRect(0,0,512,384);
+      c.fillStyle = '#ffd98a'; c.textAlign = 'center'; c.font = '700 34px "Pixelify Sans",monospace'; c.fillText('GALERI', 256, 40);
+      const tmp = document.createElement('canvas'); tmp.width = 160; tmp.height = 120;
+      for (let i=0;i<6;i++){
+        const col = i % 3, row = (i / 3) | 0, x = 26 + col*160, y = 64 + row*156, rot = (i%2 ? 1 : -1) * .04;
+        paintScene(tmp, i);
+        c.save(); c.translate(x + 70, y + 70); c.rotate(rot);
+        c.fillStyle = '#ffffff'; c.fillRect(-70, -66, 140, 138); c.drawImage(tmp, -62, -58, 124, 93);
+        c.fillStyle = '#5a4030'; c.font = '600 13px "Nunito",sans-serif'; c.fillText((W.gallery[i] || '').slice(0, 18), 0, 58);
+        c.restore();
+      }
+    });
+    for (const sx of [-1, 1]){ mesh(box(.1, 2.5, .1), gold, sx*1.1, 1.25, 0, g); mesh(box(.5, .06, .4), gold, sx*1.1, .03, 0, g); }
+    mesh(box(2.2, 1.66, .06), 0x1a2238, 0, 1.45, 0, g);
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.575), new THREE.MeshBasicMaterial({ map:tex })); b.position.set(0, 1.45, .04); g.add(b);
+  } else if (p.id === 'cerita'){
+    // buku kenangan di podium
+    mesh(cyl(.42, .48, .1, 14), gold, 0, .05, 0, g); mesh(cyl(.22, .28, 1.0, 12), 0xf5ecdb, 0, .6, 0, g);
+    mesh(box(.9, .06, .66), gold, 0, 1.12, 0, g).rotation.x = .38;
+    const pageTex = (left) => canvasTex(160, 220, (c) => {
+      c.fillStyle = '#fffaf0'; c.fillRect(0,0,160,220); c.fillStyle = '#4f9a3a'; c.textAlign = 'center';
+      c.font = '800 22px "Baloo 2",sans-serif'; c.fillText(left ? 'Cerita' : 'Kami', 80, 34);
+      c.fillStyle = '#7a5a3e'; c.font = '700 16px "Pixelify Sans",monospace';
+      const st = W.story.slice(left ? 0 : 2, left ? 2 : 4);
+      st.forEach((s, i) => { c.fillText(s.yr, 80, 78 + i*70); c.fillStyle = 'rgba(122,90,62,.4)'; c.fillRect(30, 90 + i*70, 100, 3); c.fillRect(30, 102 + i*70, 80, 3); c.fillStyle = '#7a5a3e'; });
+    });
+    const bk = new THREE.Group(); bk.position.set(0, 1.2, .02); bk.rotation.x = -(Math.PI/2 - .38); g.add(bk);
+    mesh(box(.86, .62, .04), 0x4f9a3a, 0, 0, -.02, bk);
+    const lp = new THREE.Mesh(new THREE.PlaneGeometry(.4, .56), new THREE.MeshBasicMaterial({ map:pageTex(true) })); lp.position.set(-.21, 0, .02); lp.rotation.y = .12; bk.add(lp);
+    const rp = new THREE.Mesh(new THREE.PlaneGeometry(.4, .56), new THREE.MeshBasicMaterial({ map:pageTex(false) })); rp.position.set(.21, 0, .02); rp.rotation.y = -.12; bk.add(rp);
+    mesh(box(.04, .3, .01), 0xe0566f, .05, -.38, .03, bk);
+  } else if (p.id === 'ucapan'){
+    // papan kartu ucapan
+    const tex = infoTex(320, 384, 'UCAPAN', '#2a9d8f', (c, w, h) => {
+      const cols = ['#ffd6e0', '#fff1b8', '#d4f0e8', '#e3d9ff', '#ffe2c6', '#d9eefc'], rnd = mulberry32(5);
+      for (let i=0;i<9;i++){
+        const x = 26 + (i%3)*96, y = 96 + ((i/3)|0)*88, r = (rnd() - .5) * .2;
+        c.save(); c.translate(x + 40, y + 34); c.rotate(r); c.fillStyle = cols[i % cols.length]; c.fillRect(-40, -32, 80, 66);
+        c.fillStyle = 'rgba(90,64,48,.45)'; c.fillRect(-30, -16, 60, 4); c.fillRect(-30, -4, 48, 4); c.fillRect(-30, 8, 54, 4);
+        c.fillStyle = '#e0566f'; c.beginPath(); c.arc(28, -24, 5, 0, 7); c.fill(); c.restore();
+      }
+      c.fillStyle = '#5a4030'; c.textAlign = 'center'; c.font = '700 18px "Nunito",sans-serif'; c.fillText('Semua ucapan juga tampil di TV', w/2, h - 22);
+    });
+    const legL = mesh(box(.07, 2.3, .07), 0x3a2a1c, -.55, 1.1, .08, g); legL.rotation.z = .1;
+    const legR = mesh(box(.07, 2.3, .07), 0x3a2a1c, .55, 1.1, .08, g); legR.rotation.z = -.1;
+    const legB = mesh(box(.07, 2.2, .07), 0x3a2a1c, 0, 1.05, -.42, g); legB.rotation.x = -.35;
+    mesh(box(1.5, 1.8, .07), gold, 0, 1.45, .14, g);
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.68), new THREE.MeshBasicMaterial({ map:tex })); b.position.set(0, 1.45, .18); g.add(b);
+    mesh(box(.9, .06, .3), gold, 0, .55, .3, g);
+    for (let k=0;k<3;k++) mesh(box(.22, .02, .16), [0xffd6e0, 0xfff1b8, 0xd4f0e8][k], -.25 + k*.25, .6 + k*.02, .3, g);
+  }
+}
 function buildPillars(){
   PILLARS.forEach(p => {
-    sb(box(1.6,.32,1.6), COL.trim, p.x, .16, p.z); sb(box(1.32,.16,1.32), COL.gold, p.x, .4, p.z);
-    sb(cyl(.4,.46,2.4,14), COL.marble, p.x, 1.68, p.z);
-    sb(cyl(.5,.5,.16,14), p.color, p.x, 1.05, p.z);
-    sb(box(1.15,.3,1.15), COL.gold, p.x, 3.03, p.z);
-    sb(cyl(.55,.6,.14,14), p.color, p.x, 3.25, p.z);
-    p.icon = pillarIcon(p.id); p.icon.position.set(p.x, 4.2, p.z); scene.add(p.icon);
-    p.ring = glowRing(p.color, p.x, p.z);
-    p.label = labelSprite(p.name, p.css); p.label.position.set(p.x, 5.35, p.z); scene.add(p.label);
+    const g = new THREE.Group(); g.position.set(p.x, 0, p.z); g.rotation.y = p.ry; scene.add(g);
+    stationModel(p, g);
+    // titik berdiri di depan objek (arah hadap objek)
+    p.ix = p.x + Math.sin(p.ry) * 1.25; p.iz = Math.min(p.z + Math.cos(p.ry) * 1.25, BLD.z1 - .8);
+    p.ring = glowRing(p.color, p.ix, p.iz); p.ring.scale.setScalar(.5);
+    p.label = labelSprite(p.name, p.css); p.label.position.set(p.x, 3.15, p.z); scene.add(p.label);
     cc(p.x, p.z, .95);
-    const proxy = new THREE.Mesh(cyl(1.2,1.2,6,8), new THREE.MeshBasicMaterial()); proxy.visible = false;
-    proxy.position.set(p.x, 3, p.z); proxy.userData.inter = 'p:' + p.id; scene.add(proxy); PICK.push(proxy);
+    const proxy = new THREE.Mesh(box(p.id === 'galeri' ? 2.2 : 1.7, 2.5, .9), new THREE.MeshBasicMaterial()); proxy.visible = false;
+    proxy.position.set(0, 1.25, 0); proxy.userData.inter = 'p:' + p.id; g.add(proxy); PICK.push(proxy);
     if (visited.includes(p.id)) markVisited3D(p);
   });
 }
@@ -1230,7 +1299,7 @@ const sheetOpen = () => !$('#sheetWrap').hidden;
 const busy = () => !started || dlg.open || sheetOpen() || !$('#lb').hidden;
 
 function registerInteractions(){
-  PILLARS.forEach(p => INTER.push({ key:'p:'+p.id, x:p.x, z:p.z, reach:2.75, label:p.act, run:() => openSheet(p.id) }));
+  PILLARS.forEach(p => INTER.push({ key:'p:'+p.id, x:p.ix, z:p.iz, reach:2.4, label:p.act, run:() => openSheet(p.id) }));
   INTER.push({ key:'couple', x:0, z:-15.2, reach:2.6, label:'Ngobrol', run:coupleTalk });
   INTER.push({ key:'sign', x:3.9, z:24.4, reach:2.2, label:'Baca Papan', run:signTalk });
   INTER.push({ key:'tv', x:11, z:-19.2, reach:2.8, label:'Lihat Ucapan', run:() => openSheet('ucapan') });
@@ -1258,12 +1327,12 @@ function refreshBusy(){ $('#hud').classList.toggle('busy', busy()); }
 function coupleTalk(){
   const all = visited.length >= PILLARS.length;
   const lines = all ? [
-    'Kamu sudah keliling semua pilar. Makasih banyak ya, ' + guest + '!',
+    'Kamu sudah lihat semua info. Makasih banyak ya, ' + guest + '!',
     'Sampai ketemu di hari ' + W.dateLabel + '. Doa dan kehadiranmu berarti banget buat kami.'
   ] : [
     'Halo, ' + guest + '! Makasih sudah datang ke resepsi kami.',
     'Kami, ' + W.groom.nick + ' dan ' + W.bride.nick + ', senang sekali kamu ada di sini.',
-    'Keliling ruangan ya. Pilar di sekeliling ruangan menyimpan info: acara, lokasi, galeri, cerita, RSVP, dan ucapan. Panah kuning di kakimu menunjuk pilar yang belum dikunjungi.'
+    'Info undangan ada di foyer dekat pintu masuk: meja RSVP, jadwal acara, peta lokasi, photo wall, buku cerita kami, dan papan ucapan. Tap saja yang mau dilihat.'
   ];
   say(COUPLE, lines);
 }
@@ -1271,14 +1340,14 @@ function signTalk(){
   say('Papan Selamat Datang', [
     'Selamat datang di pernikahan ' + COUPLE + '! Resepsi ada di Grand Ballroom hotel, masuk lewat pintu lobby.',
     'Geser joystick di kiri bawah untuk jalan. Di laptop bisa pakai WASD atau tombol panah.',
-    'Tap lantai untuk jalan ke situ, atau tap pilar langsung. Kalau sudah dekat, tekan tombol A.',
+    'Tap lantai untuk jalan ke situ. Di dalam, tap papan atau meja info untuk langsung membukanya.',
     'Cubit layar (atau scroll) untuk zoom.'
   ]);
 }
 function doormanTalk(){
   say('Doorman', [
     'Selamat datang di ' + W.venue.name + '! Resepsi ' + COUPLE + ' ada di Grand Ballroom.',
-    'Silakan masuk, pintunya terbuka otomatis. Jangan lupa isi RSVP di meja dekat pintu ya.'
+    'Silakan masuk, pintunya terbuka otomatis. Semua info undangan ada di kiri-kanan pintu masuk, jangan lupa isi RSVP di meja buku tamu ya.'
   ]);
 }
 function petDog(){ dog.hop = 1; say('Kopi', ['Guk! Guk!', 'Kopi kelihatan senang sekali dielus. Ekornya goyang terus.']); }
@@ -1365,7 +1434,7 @@ function openSheet(id){
   if (id === 'rsvp'){ bindRsvp(); guestPager = makePager('list', $('#glist'), $('#gMore'), renderGuest, 'Belum ada yang konfirmasi. Jadilah yang pertama!'); guestPager(); }
   if (id === 'ucapan'){
     $('#writeWish').onclick = () => { openSheet('rsvp'); setTimeout(() => { const m = $('#rsvpMsg'); if (m){ m.scrollIntoView({ block:'center' }); m.focus({ preventScroll:true }); } }, 60); };
-    makePager('wishes', $('#wishList'), $('#wishMore'), renderWish, 'Belum ada ucapan. Tulis yang pertama di pilar RSVP.')();
+    makePager('wishes', $('#wishList'), $('#wishMore'), renderWish, 'Belum ada ucapan. Tulis yang pertama di meja RSVP.')();
   }
   if (!visited.includes(id)){ visited.push(id); store.set('visited', visited); markVisited3D(p); updateProgress(); }
   refreshBusy();
@@ -1375,7 +1444,7 @@ function closeSheet(){
   $('#sheetWrap').hidden = true; curSheet = null; refreshBusy();
   if (visited.length >= PILLARS.length && !finaleDone){
     finaleDone = true; store.set('finale', true); burstConfetti();
-    setTimeout(() => say(COUPLE, ['Yeay! Semua pilar sudah kamu kunjungi.', 'Doa dan kehadiranmu berarti banget buat kami. Sampai jumpa di hari ' + W.dateLabel + '!']), 500);
+    setTimeout(() => say(COUPLE, ['Yeay! Semua info sudah kamu lihat.', 'Doa dan kehadiranmu berarti banget buat kami. Sampai jumpa di hari ' + W.dateLabel + '!']), 500);
   }
 }
 function bindRsvp(){
@@ -1607,8 +1676,8 @@ function bindUI(){
     const first = !store.get('greeted', false); store.set('greeted', true);
     if (first) setTimeout(() => say(COUPLE, [
       'Halo, ' + guest + '! Selamat datang di resepsi pernikahan kami.',
-      'Silakan masuk ke gedung lewat pintu utama. Kami menunggu di pelaminan, dan info acaranya ada di pilar-pilar di dalam.',
-      'Geser joystick di kiri bawah untuk jalan, dekati pilar, lalu tekan A.'
+      'Silakan masuk lewat pintu lobby. Info acara ada di foyer tepat setelah pintu, dan kami menunggu di pelaminan.',
+      'Geser joystick di kiri bawah untuk jalan, lalu tap objek info atau tekan A di dekatnya.'
     ]), 600);
     else toast('Selamat datang lagi, ' + guest + '!');
   });
@@ -1686,7 +1755,9 @@ function handleTap(cx, cy){
   const hit = ray.intersectObjects(PICK, false)[0];
   if (hit){
     const it = INTER.find(q => q.key === hit.object.userData.inter);
-    if (it){
+    const interior = it && (it.key.startsWith('p:') || it.key === 'tv' || it.key === 'couple');
+    if (it && interior && inside && (it.key !== 'couple')){ it.run(); return; }
+    if (it && !(interior && !inside)){
       const p = interPos(it), pp = player.g.position;
       if (Math.hypot(pp.x - p.x, pp.z - p.z) < it.reach){ it.run(); return; }
       const dx = pp.x - p.x, dz = pp.z - p.z, d = Math.hypot(dx, dz) || 1;
@@ -1769,7 +1840,6 @@ function update(dt){
   animateSeats(dt);
   // pillars
   PILLARS.forEach((p, i) => {
-    p.icon.rotation.y += dt*1.1; p.icon.position.y = 4.2 + Math.sin(T*2 + i)*.16;
     p.ring.material.opacity = (visited.includes(p.id) ? .45 : .4 + Math.sin(T*3 + i)*.2);
   });
 
@@ -1796,7 +1866,7 @@ function update(dt){
   const ins = inX && (inside ? pp.z < BLD.z1 + .4 : pp.z < BLD.z1 - .5);
   if (ins !== inside){
     inside = ins;
-    if (ins && !store.get('entered', false)){ store.set('entered', true); toast('Selamat datang di Grand Ballroom! Info ada di sekeliling ruangan.', 3800); }
+    if (ins && !store.get('entered', false)){ store.set('entered', true); toast('Selamat datang! Info undangan ada di kiri-kanan pintu masuk. Tap untuk membuka.', 4000); }
   }
   const fadeTarget = inside ? 0 : 1;
   if (extFade !== fadeTarget){ extFade = clamp(extFade + Math.sign(fadeTarget - extFade) * dt / .85, 0, 1); applyExtFade(extFade); }
@@ -1839,9 +1909,9 @@ function update(dt){
 
   // compass arrow to nearest unvisited pillar
   let tgt = null, td = 1e9;
-  PILLARS.forEach(p => { if (visited.includes(p.id)) return; const d = Math.hypot(p.x - pp.x, p.z - pp.z); if (d < td){ td = d; tgt = p; } });
+  PILLARS.forEach(p => { if (visited.includes(p.id)) return; const d = Math.hypot(p.ix - pp.x, p.iz - pp.z); if (d < td){ td = d; tgt = p; } });
   if (tgt && td > 4.2 && started && !busy()){
-    const gx = inside ? tgt.x : 0, gz = inside ? tgt.z : BLD.z1 + .5;
+    const gx = inside ? tgt.ix : 0, gz = inside ? tgt.iz : BLD.z1 + .5;
     const dx = gx - pp.x, dz = gz - pp.z, d = Math.hypot(dx, dz) || 1;
     arrow.visible = true; arrow.position.set(pp.x + dx/d*1.2, .08, pp.z + dz/d*1.2); arrow.rotation.y = Math.atan2(-dx, -dz);
     arrow.material.opacity = .65 + Math.sin(T*5)*.25;
@@ -1868,7 +1938,7 @@ function update(dt){
     camera.position.lerp(want, Math.min(1, dt*3));
     const lookAhead = (portrait ? 10 : 7)*(1 - k), lookY = .8 + (portrait ? 5.7 : 4.2)*(1 - k);
     camera.lookAt(camTarget.x, lookY, camTarget.z - lookAhead - (portrait ? .6 : 0)*k);
-    const fov = (portrait ? 46 : 40) + ((portrait ? 38 : 34) - (portrait ? 46 : 40))*k;
+    const fov = (portrait ? 46 : 40) + ((portrait ? 42 : 34) - (portrait ? 46 : 40))*k;
     if (Math.abs(camera.fov - fov) > .01){ camera.fov = fov; camera.updateProjectionMatrix(); }
   }
 }
