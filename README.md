@@ -1,6 +1,8 @@
 # Undangan Pernikahan 3D
 
-Undangan pernikahan berbentuk game 3D low poly ala Harvest Moon. Tamu mulai di halaman depan gedung resepsi (fasad, kubah, red carpet, air mancur), lalu masuk lewat pintu utama. Begitu di dalam, atap dan dinding depan disembunyikan sehingga seluruh ballroom kelihatan: pelaminan, meja bundar tamu, kue pengantin, dan 6 pilar info: **RSVP**, **Acara**, **Galeri**, **Lokasi**, **Cerita Kami**, dan **Ucapan**.
+Undangan pernikahan berbentuk game 3D low poly ala Harvest Moon, berlatar hotel mewah. Tamu mulai di forecourt hotel (blok kamar dengan jendela menyala, nama hotel di mahkota atap, kanopi lobby, kolam refleksi, palem, doorman), lalu masuk lewat pintu kaca geser otomatis. Saat masuk, fasad dan atap memudar sambil naik sehingga seluruh Grand Ballroom kelihatan: karpet navy damask, pelaminan dinding bunga, meja bundar tamu, chandelier, dan **TV LED** di dinding belakang kanan yang menampilkan ucapan tamu secara bergulir (tap TV untuk membuka semua ucapan).
+
+Info undangan ada di 6 pilar di sekeliling ballroom: **RSVP**, **Acara**, **Galeri**, **Lokasi**, **Cerita Kami**, dan **Ucapan**.
 
 Satu file statis (`index.html`, Three.js r128 dari CDN) plus satu Vercel function (`api/rsvp.js`). Tanpa build step. Mobile-first.
 

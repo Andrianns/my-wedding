@@ -372,12 +372,12 @@ function sb(geo, color, x, y, z, o){
   if (g.attributes.uv === undefined) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2), 2));
   (SB[color] || (SB[color] = [])).push(g);
 }
-function flushSB(batch, parent){
+function flushSB(batch, parent, matFn){
   batch = batch || SB_MAIN; parent = parent || scene;
   for (const c in batch){
     const merged = BGU.mergeBufferGeometries(batch[c]);
     if (!merged) continue;
-    const m = new THREE.Mesh(merged, M(+c)); m.castShadow = true; m.receiveShadow = true; parent.add(m);
+    const m = new THREE.Mesh(merged, matFn ? matFn(+c) : M(+c)); m.castShadow = true; m.receiveShadow = true; parent.add(m);
   }
 }
 function inst(geo, color, n){
@@ -465,169 +465,257 @@ function animChibi(c, moving, dt, t){
 }
 function lerpAng(a, b, k){ let d = ((b - a + Math.PI) % (Math.PI*2) + Math.PI*2) % (Math.PI*2) - Math.PI; return a + d*k; }
 
-/* ---------- world builders: gedung resepsi ---------- */
-// Gedung: x -16..16, z -22..2 (dinding depan di z=2, pintu utama |x| < 2.6).
-const BLD = { x0:-16, x1:16, z0:-22, z1:2, h:7, door:2.6 };
+/* ---------- world builders: hotel & grand ballroom ---------- */
+// Ballroom (podium hotel): x -16..16, z -22..2. Pintu kaca geser di z=2, |x| < 2.4.
+const BLD = { x0:-16, x1:16, z0:-22, z1:2, h:7, door:2.4 };
 const COL = {
-  wall:0xf3e9d6, wallIn:0xf8f1e4, trim:0xe6d6b8, marble:0xf7f3ea, gold:0xd4af37, goldDk:0xb8902a,
-  stone:0xd9d2c3, roof:0xcfc3ab, dome:0x86b8ad, glassWarm:0xffe2a0, glass:0xbfe0ee, carpet:0xa8233a,
-  blush:0xf3c9cf, white:0xfdfbf6, hedge:0x4a8f3a, leaf:0x5aa846
+  wall:0xe6d8bf, wallIn:0xefe4cf, panel:0xf5ecdb, mirror:0xc4d3da, bronze:0x4a3a2c, gold:0xd4af37, goldDk:0xb8902a,
+  stone:0xddd5c6, cream:0xf6efe2, glass:0xbcdde8, glassWarm:0xf0d39a, carpet:0xa8233a, blush:0xf3c9cf,
+  white:0xfdfbf6, hedge:0x467f37, leaf:0x5aa846, asphalt:0x3b3d45
 };
 const FLOWERS = [0xf28aa3, 0xffffff, 0xf6c9a6, 0xe0566f, 0xf3c9cf];
-let EXT = null;          // bagian gedung yang disembunyikan saat pemain di dalam (atap, fasad, dinding depan)
-let fountainFx = null;
+let EXT = null, extFade = 1, fountainFx = null, doors = null, doorOpen = 0, ledTV = null;
+const extMats = [];
 
 function flat(geo, mat, x, z, y){ const m = new THREE.Mesh(geo, mat); m.rotation.x = -Math.PI/2; m.position.set(x, y||.02, z); m.receiveShadow = true; scene.add(m); return m; }
 const decal = f => ({ polygonOffset:true, polygonOffsetFactor:f, polygonOffsetUnits:f });
+function extMat(m){ m.transparent = false; m.opacity = 1; extMats.push(m); return m; }
+function glowTex(){
+  return canvasTex(64, 64, (c) => { const g = c.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,'rgba(255,240,200,1)'); g.addColorStop(.35,'rgba(255,220,150,.55)'); g.addColorStop(1,'rgba(255,200,120,0)'); c.fillStyle = g; c.fillRect(0,0,64,64); });
+}
+let _glow = null;
+function glowSprite(x, y, z, s, parent){
+  _glow = _glow || glowTex();
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:_glow, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true }));
+  sp.position.set(x, y, z); sp.scale.set(s, s, 1); (parent || scene).add(sp); return sp;
+}
 
 function buildGround(){
   const gt = canvasTex(64, 64, (x) => {
-    x.fillStyle = '#93d25e'; x.fillRect(0,0,64,64);
-    x.fillStyle = '#8acb56'; x.fillRect(0,0,32,32); x.fillRect(32,32,32,32);
-    for (let i=0;i<46;i++){ x.fillStyle = R()<.5 ? '#a0dc6c' : '#7fbf4d'; x.fillRect(R()*64|0, R()*64|0, 2, 2); }
+    x.fillStyle = '#8fcf5c'; x.fillRect(0,0,64,64);
+    x.fillStyle = '#86c654'; x.fillRect(0,0,32,32); x.fillRect(32,32,32,32);
+    for (let i=0;i<46;i++){ x.fillStyle = R()<.5 ? '#9bd96a' : '#7bbb4b'; x.fillRect(R()*64|0, R()*64|0, 2, 2); }
   });
   gt.wrapS = gt.wrapT = THREE.RepeatWrapping; gt.repeat.set(70,70); gt.magFilter = THREE.NearestFilter;
   const g = new THREE.Mesh(new THREE.PlaneGeometry(140,140), new THREE.MeshPhongMaterial({ map:gt, shininess:0 }));
   g.rotation.x = -Math.PI/2; g.receiveShadow = true; scene.add(g);
 
-  // halaman depan: paving batu
+  // forecourt: paving batu terang
   const pv = canvasTex(64, 64, (x) => {
-    x.fillStyle = '#ddd5c5'; x.fillRect(0,0,64,64); x.strokeStyle = '#c4baa6'; x.lineWidth = 2;
-    for (let r=0;r<4;r++){ x.beginPath(); x.moveTo(0, r*16); x.lineTo(64, r*16); x.stroke();
-      for (let c=0;c<3;c++){ const xx = (c*32 + (r%2)*16) % 64; x.beginPath(); x.moveTo(xx, r*16); x.lineTo(xx, r*16+16); x.stroke(); } }
+    x.fillStyle = '#e4ddcf'; x.fillRect(0,0,64,64); x.strokeStyle = '#cfc5b2'; x.lineWidth = 2;
+    for (let r=0;r<2;r++) for (let c=0;c<2;c++) x.strokeRect(c*32+1, r*32+1, 30, 30);
+    x.fillStyle = 'rgba(160,140,110,.12)'; for (let i=0;i<30;i++) x.fillRect(R()*64, R()*64, 2, 2);
   });
-  pv.wrapS = pv.wrapT = THREE.RepeatWrapping; pv.repeat.set(12, 11.6);
-  flat(new THREE.PlaneGeometry(24, 23.2), new THREE.MeshPhongMaterial({ map:pv, shininess:0, ...decal(-1) }), 0, 13.6, .015);
-
-  // lantai marmer ballroom
-  const mt = canvasTex(256, 256, (x) => {
-    x.fillStyle = '#f6f1e7'; x.fillRect(0,0,256,256); x.fillStyle = '#ece4d4'; x.fillRect(0,0,128,128); x.fillRect(128,128,128,128);
-    for (let i=0;i<14;i++){ x.strokeStyle = 'rgba(150,140,125,.16)'; x.lineWidth = 1 + R()*1.2; x.beginPath(); let px = R()*256, py = R()*256; x.moveTo(px,py); for (let k=0;k<5;k++){ px += (R()-.5)*70; py += (R()-.3)*60; x.lineTo(px,py); } x.stroke(); }
-    x.strokeStyle = '#d8bc6a'; x.lineWidth = 3; x.strokeRect(1.5,1.5,253,253); x.beginPath(); x.moveTo(128,0); x.lineTo(128,256); x.moveTo(0,128); x.lineTo(256,128); x.stroke();
+  pv.wrapS = pv.wrapT = THREE.RepeatWrapping; pv.repeat.set(13, 12);
+  flat(new THREE.PlaneGeometry(26, 24), new THREE.MeshPhongMaterial({ map:pv, shininess:6, ...decal(-1) }), 0, 13.6, .015);
+  // driveway melintang di depan lobby
+  const dw = canvasTex(256, 64, (x) => {
+    x.fillStyle = '#3b3d45'; x.fillRect(0,0,256,64); x.fillStyle = 'rgba(255,255,255,.04)'; for (let i=0;i<120;i++) x.fillRect(R()*256, R()*64, 2, 2);
+    x.fillStyle = '#e8e2d2'; for (let i=0;i<4;i++) x.fillRect(i*64 + 12, 30, 36, 4);
   });
-  mt.wrapS = mt.wrapT = THREE.RepeatWrapping; mt.repeat.set(31.4/4, 23.6/4);
-  flat(new THREE.PlaneGeometry(31.4, 23.6), new THREE.MeshPhongMaterial({ map:mt, shininess:40, specular:0x554a3a, ...decal(-1) }), 0, -10, .02);
+  dw.wrapS = THREE.RepeatWrapping; dw.repeat.set(6, 1);
+  flat(new THREE.PlaneGeometry(47, 5.4), new THREE.MeshPhongMaterial({ map:dw, shininess:10, ...decal(-2) }), 0, 7.6, .02);
+  for (const z of [4.85, 10.35]) flat(new THREE.PlaneGeometry(47, .16), new THREE.MeshPhongMaterial({ color:0xc8bfae, ...decal(-3) }), 0, z, .025);
 
-  // red carpet dari gerbang sampai pelaminan
-  flat(new THREE.PlaneGeometry(2.2, 41.2), new THREE.MeshPhongMaterial({ color:COL.carpet, shininess:0, ...decal(-4) }), 0, 4.6, .03);
+  // red carpet dari gerbang ke pintu lobby
+  flat(new THREE.PlaneGeometry(2.2, 23.6), new THREE.MeshPhongMaterial({ color:COL.carpet, shininess:0, ...decal(-4) }), 0, 13.7, .03);
   const gm = new THREE.MeshPhongMaterial({ color:COL.gold, shininess:30, ...decal(-5) });
-  for (const sx of [-1.14, 1.14]) flat(new THREE.PlaneGeometry(.1, 41.2), gm, sx, 4.6, .035);
-  const pet = new THREE.MeshBasicMaterial({ color:0xf7b6c4, ...decal(-6) });
-  for (let i=0;i<46;i++){ const m = flat(new THREE.CircleGeometry(.07, 5), pet, (R()-.5)*1.9, -15.5 + R()*17, .04); m.rotation.z = R()*6; }
+  for (const sx of [-1.14, 1.14]) flat(new THREE.PlaneGeometry(.1, 23.6), gm, sx, 13.7, .035);
+
+  // ballroom: karpet navy damask
+  const cp = canvasTex(128, 128, (x) => {
+    x.fillStyle = '#23304f'; x.fillRect(0,0,128,128);
+    const med = (cx, cy, s) => {
+      x.save(); x.translate(cx, cy);
+      x.strokeStyle = '#c8a24a'; x.lineWidth = 2.2;
+      x.beginPath(); x.moveTo(0,-s); x.quadraticCurveTo(s*.55,-s*.55, s,0); x.quadraticCurveTo(s*.55,s*.55, 0,s); x.quadraticCurveTo(-s*.55,s*.55,-s,0); x.quadraticCurveTo(-s*.55,-s*.55,0,-s); x.stroke();
+      x.fillStyle = '#8e2f45'; x.beginPath(); x.arc(0,0,s*.22,0,7); x.fill();
+      x.fillStyle = '#c8a24a'; for (let k=0;k<4;k++){ x.rotate(Math.PI/2); x.beginPath(); x.arc(0, s*.55, s*.09, 0, 7); x.fill(); }
+      x.restore();
+    };
+    med(64, 64, 30); med(0, 0, 30); med(128, 0, 30); med(0, 128, 30); med(128, 128, 30);
+    x.strokeStyle = 'rgba(200,162,74,.35)'; x.lineWidth = 1; x.strokeRect(.5,.5,127,127);
+  });
+  cp.wrapS = cp.wrapT = THREE.RepeatWrapping; cp.repeat.set(31.4/2.6, 23.6/2.6);
+  flat(new THREE.PlaneGeometry(31.4, 23.6), new THREE.MeshPhongMaterial({ map:cp, shininess:4, ...decal(-1) }), 0, -10, .02);
+  // lorong: runner gading + kelopak
+  flat(new THREE.PlaneGeometry(2.4, 18.2), new THREE.MeshPhongMaterial({ color:0xf6efe2, shininess:0, ...decal(-4) }), 0, -7.2, .03);
+  for (const sx of [-1.24, 1.24]) flat(new THREE.PlaneGeometry(.12, 18.2), gm, sx, -7.2, .035);
+  const pet = new THREE.MeshBasicMaterial({ color:0xf3a6b8, ...decal(-6) });
+  for (let i=0;i<50;i++){ const m = flat(new THREE.CircleGeometry(.07, 5), pet, (R()-.5)*2.1, -15.8 + R()*17.4, .04); m.rotation.z = R()*6; }
 }
 
 function buildBoundary(){
-  // pagar tanaman (hedge) keliling area
   const H = 24;
-  const hedge = (x, z, w, d) => { sb(box(w, 1, d), COL.hedge, x, .5, z); };
+  const hedge = (x, z, w, d) => sb(box(w, 1.1, d), COL.hedge, x, .55, z);
   hedge(-H, 1, .9, 50); hedge(H, 1, .9, 50); hedge(0, -H, 48.9, .9);
-  hedge(-13.6, 26, 20.8, .9); hedge(13.6, 26, 20.8, .9);
-  for (let t=-H+2; t<=H-2; t+=4){ sb(jitter(ico(.42), .06), 0x57a046, -H, 1.2, t); sb(jitter(ico(.42), .06), 0x57a046, H, 1.2, t); }
-  // gerbang dengan lengkung bunga
-  for (const sx of [-3.2, 3.2]){
-    sb(box(.8,2.6,.8), COL.stone, sx, 1.3, 26); sb(box(1,.2,1), COL.gold, sx, 2.7, 26);
-    sb(new THREE.SphereGeometry(.28,10,8), 0xfff2c8, sx, 3.05, 26);
+  hedge(-13.8, 26, 20.4, .9); hedge(13.8, 26, 20.4, .9);
+  // gerbang hotel: pylon batu + lampu
+  for (const sx of [-1, 1]){
+    const x = sx * 3.4;
+    sb(box(1.1, 3.2, 1.1), 0x4a3a2c, x, 1.6, 26); sb(box(1.2, .18, 1.2), COL.gold, x, 3.25, 26);
+    sb(box(.08, 2.2, .9), COL.gold, x + sx*-.58, 1.6, 26);
+    sb(new THREE.SphereGeometry(.3, 12, 8), 0xfff2c8, x, 3.6, 26);
   }
-  sb(new THREE.TorusGeometry(3.2,.12,6,22,Math.PI), COL.gold, 0, 2.7, 26);
-  for (let i=1;i<16;i++){ const a = i/16*Math.PI; sb(ico(.22), FLOWERS[i%5], Math.cos(a)*3.2, 2.7 + Math.sin(a)*3.2, 26.1); }
 }
 
+/* pohon palem (instanced) + pohon biasa di luar pagar */
 function buildTrees(){
-  const trunk = cyl(.16,.24,1.3,6); trunk.translate(0,.65,0);
+  const trunkParts = [];
+  for (let i=0;i<6;i++){ const g = nn(cyl(.17 - i*.012, .2 - i*.012, .8, 7)); g.translate(Math.sin(i*.35)*.25, .4 + i*.78, 0); trunkParts.push(g); }
+  const trunk = BGU.mergeBufferGeometries(trunkParts);
+  const leaves = [];
+  for (let k=0;k<9;k++){
+    const a = k/9*Math.PI*2, g = nn(box(.34, .04, 2.1)); g.translate(0, 0, 1.05); g.rotateX(.42 + (k%2)*.18); g.rotateY(a); g.translate(.25*Math.sin(5*.35), 4.75, 0);
+    leaves.push(g);
+  }
+  leaves.push(nn(ico(.3)).translate(.25*Math.sin(1.75), 4.7, 0));
+  const crown = BGU.mergeBufferGeometries(leaves);
+  const palms = [[-4.7,14],[4.7,14],[-11.5,13.5],[11.5,13.5],[-11.5,19],[11.5,19],[-11.5,24],[11.5,24],
+                 [-20,-18],[20,-18],[-20,-9],[20,-9],[-20,0],[20,0],[-20,9],[20,9],[-20,18],[20,18]];
+  const pT = inst(trunk, 0xffffff, palms.length), pC = inst(crown, 0xffffff, palms.length);
+  palms.forEach(([x,z], i) => {
+    const s = .95 + R()*.25;
+    dummy.position.set(x,0,z); dummy.rotation.set(0, R()*6.28, 0); dummy.scale.set(s,s,s); dummy.updateMatrix();
+    pT.setMatrixAt(i, dummy.matrix); pC.setMatrixAt(i, dummy.matrix);
+    pT.setColorAt(i, tmpC.setHex(0x9b7652)); pC.setColorAt(i, tmpC.setHex(i%2 ? 0x3f8a37 : 0x4e9a3c));
+    cc(x, z, .45);
+  });
+  // pohon lebat di luar pagar
+  const trunk2 = cyl(.16,.24,1.3,6); trunk2.translate(0,.65,0);
   const canopy = BGU.mergeBufferGeometries([
-    jitter(ico(1.05), .18).translate(0,2.0,0),
-    jitter(ico(.75), .14).translate(.55,2.55,.15),
-    jitter(ico(.7), .14).translate(-.5,2.45,-.25)
+    jitter(ico(1.05), .18).translate(0,2.0,0), jitter(ico(.75), .14).translate(.55,2.55,.15), jitter(ico(.7), .14).translate(-.5,2.45,-.25)
   ].map(nn));
   const spots = [];
-  const inner = [[-20.5,-19],[20.5,-19],[-20.5,-9],[20.5,-9],[-20.5,1],[20.5,1],[-20,12],[-20.5,21.5],[20.5,12.5]];
-  inner.forEach(([x,z]) => { spots.push([x,z,1.1+R()*.3]); cc(x, z, .6); });
   for (let i=0;i<120;i++){ const a = R()*Math.PI*2, r = 29 + R()*16; spots.push([Math.sin(a)*r, Math.cos(a)*r, .9+R()*.8]); }
-  const tI = inst(trunk, 0xffffff, spots.length), cI = inst(canopy, 0xffffff, spots.length);
+  const tI = inst(trunk2, 0xffffff, spots.length), cI = inst(canopy, 0xffffff, spots.length);
   const greens = [0x4e9a3c, 0x5aa846, 0x3f8a37, 0x6bb24f];
   spots.forEach(([x,z,s], i) => {
     dummy.position.set(x,0,z); dummy.rotation.set(0, R()*6.28, 0); dummy.scale.set(s,s,s); dummy.updateMatrix();
     tI.setMatrixAt(i, dummy.matrix); cI.setMatrixAt(i, dummy.matrix);
     tI.setColorAt(i, tmpC.setHex(0x8a5a33)); cI.setColorAt(i, tmpC.setHex(greens[i % greens.length]));
   });
-  tI.instanceMatrix.needsUpdate = cI.instanceMatrix.needsUpdate = true;
+  for (const m of [pT, pC, tI, cI]) m.instanceMatrix.needsUpdate = true;
 }
 
-function archWindow(x, y, z, ry, w, h, glass){
-  // jendela tinggi dengan lengkung di atas (menghadap +z sebelum diputar ry)
-  const o = { ry };
-  const off = (dx, dz) => [x + Math.cos(ry)*dx + Math.sin(ry)*dz, z - Math.sin(ry)*dx + Math.cos(ry)*dz];
-  let [px, pz] = off(0, 0);
-  sb(box(w+.3, h+.2, .08), 0xffffff, px, y, pz, o);
-  [px, pz] = off(0, .03); sb(box(w, h, .1), glass, px, y, pz, o);
-  [px, pz] = off(0, .02); sb(cyl(w/2+.15, w/2+.15, .08, 14), 0xffffff, px, y + h/2, pz, { rx:Math.PI/2, ry, order:'YXZ' });
-  [px, pz] = off(0, .05); sb(cyl(w/2, w/2, .1, 14), glass, px, y + h/2, pz, { rx:Math.PI/2, ry, order:'YXZ' });
-  [px, pz] = off(0, .07); sb(box(.06, h + w/2, .06), COL.gold, px, y + w/4, pz, o);
+function hotelFacadeTex(floors, cols, lit){
+  // fasad kamar hotel: kaca biru gelap, sebagian jendela menyala hangat
+  const w = 1536, h = 512, fh = h/floors, cw = w/cols, rnd = mulberry32(77);
+  return canvasTex(w, h, (c) => {
+    c.fillStyle = lit ? '#000000' : '#e6d8bf'; c.fillRect(0,0,w,h);
+    for (let f=0; f<floors; f++) for (let k=0; k<cols; k++){
+      const x = k*cw + 10, y = f*fh + 16, ww = cw - 20, hh = fh - 40, on = rnd() < .38;
+      if (lit){ if (on){ const g = c.createLinearGradient(0,y,0,y+hh); g.addColorStop(0,'#ffcf7a'); g.addColorStop(1,'#d98e3a'); c.fillStyle = g; c.fillRect(x, y, ww, hh); } continue; }
+      const g = c.createLinearGradient(0,y,0,y+hh); g.addColorStop(0, on ? '#ffd38a' : '#5d7c96'); g.addColorStop(1, on ? '#e2a252' : '#2b4258');
+      c.fillStyle = g; c.fillRect(x, y, ww, hh);
+      c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(x + 4, y + 4, ww*.25, hh - 8);
+      c.fillStyle = '#4a3a2c'; c.fillRect(k*cw + cw/2 - 2, y, 4, hh);
+    }
+    if (!lit){
+      c.fillStyle = '#4a3a2c'; for (let f=0; f<=floors; f++) c.fillRect(0, f*fh - 6, w, 12);
+      c.fillStyle = 'rgba(220,235,245,.55)'; for (let f=0; f<floors; f++) c.fillRect(0, f*fh + fh - 30, w, 10);
+      c.fillStyle = '#c9a24a'; for (let f=0; f<=floors; f++) c.fillRect(0, f*fh - 2, w, 3);
+    }
+  });
 }
 
 function buildBuilding(){
   const { x0, x1, z0, z1, h, door } = BLD, W2 = (x1 - x0)/2;
-  // dinding samping & belakang (selalu terlihat)
+  // dinding samping & belakang ballroom (selalu terlihat)
   sb(box(.5, h, z1 - z0), COL.wall, x0, h/2, (z0+z1)/2); sb(box(.5, h, z1 - z0), COL.wall, x1, h/2, (z0+z1)/2);
   sb(box(x1 - x0 + .5, h, .5), COL.wall, 0, h/2, z0);
   for (const [x, z, w, d] of [[x0, (z0+z1)/2, .7, z1-z0+.2], [x1, (z0+z1)/2, .7, z1-z0+.2], [0, z0, x1-x0+.7, .7]]){
-    sb(box(w, .35, d), COL.gold, x, h - .1, z); sb(box(w + .1, .5, d + .1), COL.trim, x, .25, z);
+    sb(box(w, .4, d), COL.bronze, x, h - .1, z); sb(box(w + .02, .1, d + .02), COL.gold, x, h - .34, z); sb(box(w + .1, .5, d + .1), COL.bronze, x, .25, z);
   }
-  // pilaster luar dinding samping
-  for (let z = z0 + 2; z < z1; z += 4){ sb(box(.3, h, .7), COL.trim, x0 - .3, h/2, z); sb(box(.3, h, .7), COL.trim, x1 + .3, h/2, z); }
-  // interior: wainscot, rel emas, jendela, lampu dinding
+  for (let z = z0 + 2; z < z1; z += 4){ sb(box(.3, h, .9), COL.bronze, x0 - .3, h/2, z); sb(box(.3, h, .9), COL.bronze, x1 + .3, h/2, z); }
+
+  // interior: panel dinding, cermin, rel emas, lampu dinding, uplight
+  const upMat = c => new THREE.MeshBasicMaterial({ color:c, transparent:true, opacity:.2, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide });
+  const upGeo = new THREE.CylinderGeometry(.15, 1.1, 4.2, 14, 1, true); upGeo.translate(0, 2.1, 0);
   for (const sx of [-1, 1]){
-    const xi = sx * (W2 - .28);
-    sb(box(.06, 1.3, z1 - z0 - .6), COL.trim, xi, .65, (z0+z1)/2);
-    sb(box(.08, .08, z1 - z0 - .6), COL.gold, xi, 1.32, (z0+z1)/2);
-    for (const z of [-4.8, -11.9, -18.6]) archWindow(xi - sx*.02, 3.6, z, sx * -Math.PI/2, 1.3, 3.0, COL.glass);
-    for (const z of [-1.6, -8.3, -15.2, -20.8]){
-      sb(box(.1, .5, .3), COL.gold, xi - sx*.06, 3.1, z);
-      sb(new THREE.SphereGeometry(.16, 10, 8), 0xfff4d6, xi - sx*.22, 3.45, z);
+    const xi = sx * (W2 - .27);
+    sb(box(.06, 1.1, z1 - z0 - .6), COL.bronze, xi, .55, (z0+z1)/2);
+    sb(box(.08, .08, z1 - z0 - .6), COL.gold, xi, 1.12, (z0+z1)/2);
+    for (let z = -20.4, k = 0; z < .5; z += 2.7, k++){
+      sb(box(.05, 4.4, 2.1), COL.gold, xi - sx*.02, 3.6, z);
+      sb(box(.06, 4.1, 1.8), k%2 ? COL.mirror : COL.panel, xi - sx*.04, 3.6, z);
+      if (k%2 === 0){
+        sb(box(.1, .45, .26), COL.gold, xi - sx*.08, 3.4, z + 1.35);
+        sb(new THREE.SphereGeometry(.14, 10, 8), 0xfff4d6, xi - sx*.24, 3.72, z + 1.35);
+        glowSprite(xi - sx*.3, 3.75, z + 1.35, 1.1);
+        const u = new THREE.Mesh(upGeo, upMat(k%4 ? 0xb48cff : 0xffb35c)); u.position.set(xi - sx*.5, 0, z + 1.35); u.rotation.z = sx * .18; scene.add(u);
+      }
     }
   }
-  sb(box(x1 - x0 - .6, 1.3, .06), COL.trim, 0, .65, z0 + .28); sb(box(x1 - x0 - .6, .08, .08), COL.gold, 0, 1.32, z0 + .28);
+  sb(box(x1 - x0 - .6, 1.1, .06), COL.bronze, 0, .55, z0 + .27); sb(box(x1 - x0 - .6, .08, .08), COL.gold, 0, 1.12, z0 + .27);
 
-  // === bagian yang hilang saat pemain masuk ===
+  // === eksterior hotel: memudar & naik halus saat pemain masuk ===
   const XB = {};
   withBatch(XB, () => {
-    // dinding depan dengan pintu
+    // lobby kaca (dinding depan podium) dengan rangka perunggu
     const segW = W2 - door;
-    for (const sx of [-1, 1]) sb(box(segW, h, .5), COL.wall, sx * (door + segW/2), h/2, z1);
-    sb(box(door*2, h - 4.4, .5), COL.wall, 0, 4.4 + (h-4.4)/2, z1);
-    sb(box(x1 - x0 + .7, .35, .7), COL.gold, 0, h - .1, z1); sb(box(x1 - x0 + .6, .5, .6), COL.trim, 0, .25, z1);
-    // kusen pintu emas + daun pintu kaca terbuka
-    sb(box(.22, 4.5, .62), COL.gold, -door, 2.25, z1); sb(box(.22, 4.5, .62), COL.gold, door, 2.25, z1); sb(box(door*2 + .4, .25, .62), COL.gold, 0, 4.45, z1);
-    for (const sx of [-1, 1]){ sb(box(1.3, 4.1, .08), COL.glass, sx * (door - .55), 2.1, z1 - .55, { ry: sx * 1.15 }); }
-    // jendela fasad
-    for (const x of [-13.6, -10.2, 10.2, 13.6]) archWindow(x, 3.5, z1 + .27, 0, 1.4, 3.2, COL.glassWarm);
-    // undakan & portico
-    sb(box(20, .1, 4), COL.marble, 0, .05, z1 + 2); sb(box(18.6, .18, 3.2), COL.marble, 0, .09, z1 + 1.6);
-    for (const x of [-8.8, -5.6, -2.4, 2.4, 5.6, 8.8]){
-      sb(box(.95, .35, .95), COL.trim, x, .3, z1 + 3); sb(cyl(.32, .38, 5.9, 14), 0xfbf8f1, x, 3.4, z1 + 3);
-      sb(box(.95, .38, .95), COL.gold, x, 6.5, z1 + 3); cc(x, z1 + 3, .5);
+    for (const sx of [-1, 1]){
+      const cx = sx * (door + segW/2);
+      sb(box(segW, h - .9, .22), COL.glassWarm, cx, (h - .9)/2, z1);
+      for (let x = door; x <= W2 + .01; x += 2.2) sb(box(.14, h - .9, .36), COL.bronze, sx * x, (h - .9)/2, z1);
+      sb(box(segW, .14, .36), COL.bronze, cx, 3.4, z1);
     }
-    sb(box(19.8, .95, 4.4), 0xf3ead6, 0, 7.1, z1 + 1.8); sb(box(19.9, .16, 4.45), COL.gold, 0, 6.6, z1 + 1.8);
-    sb(prism(4.4, 20, 2.3), 0xf6efe0, 0, 7.55, z1 + 1.8, { ry: Math.PI/2 });
-    sb(cyl(.95, .95, .1, 22), COL.gold, 0, 8.35, z1 + 4.02, { rx: Math.PI/2 });
-    // atap, balustrade, kubah
-    sb(box(x1 - x0 + 1, .6, z1 - z0 + 1), COL.roof, 0, h + .3, (z0+z1)/2);
-    for (let x = x0; x <= x1; x += 1.6){ sb(box(.18, .6, .18), 0xf3ead6, x, h + .9, z1 + .3); sb(box(.18, .6, .18), 0xf3ead6, x, h + .9, z0 - .3); }
-    sb(box(x1 - x0 + 1, .14, .3), 0xf3ead6, 0, h + 1.25, z1 + .3); sb(box(x1 - x0 + 1, .14, .3), 0xf3ead6, 0, h + 1.25, z0 - .3);
-    sb(cyl(4.3, 4.3, 1.5, 24), 0xf3ead6, 0, h + 1.35, -10); sb(cyl(4.45, 4.45, .25, 24), COL.gold, 0, h + 2.1, -10);
-    sb(new THREE.SphereGeometry(4.2, 24, 10, 0, Math.PI*2, 0, Math.PI/2), COL.dome, 0, h + 2.1, -10);
-    sb(cyl(.5, .6, 1.2, 10), 0xf3ead6, 0, h + 6.8, -10); sb(new THREE.SphereGeometry(.35, 12, 8), COL.gold, 0, h + 7.6, -10);
+    sb(box(door*2, h - 5, .22), COL.glassWarm, 0, 5 + (h - 5)/2 - .45, z1);
+    sb(box(x1 - x0 + .7, 1, .7), COL.bronze, 0, h - .4, z1); sb(box(x1 - x0 + .72, .12, .72), COL.gold, 0, h - .95, z1);
+    sb(box(x1 - x0 + .6, .5, .6), COL.bronze, 0, .25, z1);
+    // kusen pintu geser (emas)
+    sb(box(.24, 4.9, .5), COL.gold, -door - .12, 2.45, z1); sb(box(.24, 4.9, .5), COL.gold, door + .12, 2.45, z1); sb(box(door*2 + .5, .3, .5), COL.gold, 0, 4.95, z1);
+    // atap podium + teras tanaman
+    sb(box(x1 - x0 + 1, .6, z1 - z0 + 1), 0x7a6a58, 0, h + .3, (z0+z1)/2);
+    for (let x = -14.5; x <= 14.5; x += 2.9){ sb(box(1.6, .5, .7), COL.bronze, x, h + .85, z1 - .3); sb(jitter(ico(.5), .08), 0x4e9a3c, x, h + 1.3, z1 - .3); }
+    // kanopi porte-cochère
+    sb(box(15, .5, 9.4), COL.bronze, 0, 6.15, z1 + 4.9); sb(box(15.1, .9, .24), COL.gold, 0, 6.1, z1 + 9.6);
+    for (const sx of [-1, 1]){ sb(cyl(.28, .32, 5.9, 12), COL.gold, sx * 6.6, 2.95, z1 + 8.9); sb(box(.9, .3, .9), COL.bronze, sx * 6.6, .15, z1 + 8.9); }
+    // urn bunga di sisi pintu
+    for (const sx of [-1, 1]) urnFlowers(sx * 3.4, z1 + 1.1, 1.25);
   });
-  EXT = new THREE.Group(); scene.add(EXT); flushSB(XB, EXT);
+  EXT = new THREE.Group(); scene.add(EXT);
+  flushSB(XB, EXT, c => extMat(M(c).clone()));
+  for (const sx of [-1, 1]) cc(sx * 6.6, z1 + 8.9, .45);
 
-  // papan nama gedung di portico
-  const sign = canvasTex(1024, 96, (c) => {
-    c.fillStyle = '#f3ead6'; c.fillRect(0,0,1024,96);
-    c.fillStyle = '#a8842a'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.font = '800 54px "Baloo 2","Nunito",sans-serif'; c.fillText(W.venue.name.toUpperCase(), 512, 52);
+  // lampu soffit kanopi
+  const soff = new THREE.MeshBasicMaterial({ color:0xfff2c8 }); extMat(soff);
+  for (let x = -6; x <= 6; x += 2) for (let z = z1 + 1.4; z <= z1 + 8.6; z += 2.4){ const m = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 6), soff); m.position.set(x, 5.86, z); EXT.add(m); }
+
+  // blok kamar hotel 3 lantai di atas ballroom
+  const base = hotelFacadeTex(3, 15, false), lit = hotelFacadeTex(3, 15, true);
+  const side = hotelFacadeTex(3, 9, false), sideLit = hotelFacadeTex(3, 9, true);
+  const fm = extMat(new THREE.MeshPhongMaterial({ map:base, emissive:0xffffff, emissiveMap:lit, emissiveIntensity:.55, shininess:30 }));
+  const sm = extMat(new THREE.MeshPhongMaterial({ map:side, emissive:0xffffff, emissiveMap:sideLit, emissiveIntensity:.55, shininess:30 }));
+  const tm = extMat(new THREE.MeshPhongMaterial({ color:0x6d5e4e }));
+  const tower = new THREE.Mesh(box(30, 10, 18), [sm, sm, tm, tm, fm, fm]);
+  tower.position.set(0, h + .6 + 5, -10.5); tower.castShadow = true; tower.receiveShadow = true; EXT.add(tower);
+  // mahkota atap + nama hotel menyala
+  const crown = extMat(new THREE.MeshPhongMaterial({ color:COL.bronze, flatShading:true, shininess:5 }));
+  const cr = new THREE.Mesh(box(31, 1.5, 19), crown); cr.position.set(0, h + 11.35, -10.5); cr.castShadow = true; EXT.add(cr);
+  const crG = extMat(new THREE.MeshPhongMaterial({ color:COL.gold, flatShading:true }));
+  const crT = new THREE.Mesh(box(31.2, .14, 19.2), crG); crT.position.set(0, h + 12.15, -10.5); EXT.add(crT);
+  for (let x = -14; x <= 14; x += 2){ const f = new THREE.Mesh(box(.12, 1.8, .12), crG); f.position.set(x, h + 13, -1.1); EXT.add(f); }
+  const nameTex = canvasTex(1024, 128, (c) => {
+    c.clearRect(0,0,1024,128); c.fillStyle = '#ffd98a'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.shadowColor = 'rgba(255,200,110,.9)'; c.shadowBlur = 18; c.font = '800 70px "Baloo 2","Nunito",sans-serif';
+    c.fillText(W.venue.name.toUpperCase(), 512, 68);
   });
-  const sp = new THREE.Mesh(new THREE.PlaneGeometry(9, .84), new THREE.MeshBasicMaterial({ map:sign }));
-  sp.position.set(0, 7.1, BLD.z1 + 4.03); EXT.add(sp);
+  const nm = extMat(new THREE.MeshBasicMaterial({ map:nameTex, transparent:true, depthWrite:false })); nm.userData.alwaysT = true;
+  const np = new THREE.Mesh(new THREE.PlaneGeometry(18, 2.25), nm); np.position.set(0, h + 11.35, -.99); EXT.add(np);
+  // nama hotel di fascia kanopi
+  const fasc = canvasTex(1024, 96, (c) => {
+    c.fillStyle = '#d4af37'; c.fillRect(0,0,1024,96); c.fillStyle = '#3a2a1c'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = '800 50px "Baloo 2","Nunito",sans-serif'; c.fillText('GRAND BALLROOM · ' + COUPLE.toUpperCase(), 512, 52);
+  });
+  const fp = new THREE.Mesh(new THREE.PlaneGeometry(13, .82), extMat(new THREE.MeshBasicMaterial({ map:fasc, transparent:true }))); fp.position.set(0, 6.1, z1 + 9.73); EXT.add(fp);
+
+  // pintu kaca geser otomatis
+  const dm = extMat(new THREE.MeshPhongMaterial({ color:COL.glass, shininess:90, specular:0xffffff }));
+  dm.userData.baseOpacity = .55;
+  const pl = new THREE.Mesh(box(door, 4.7, .08), dm), pr = new THREE.Mesh(box(door, 4.7, .08), dm);
+  pl.position.set(-door/2, 2.35, z1 + .22); pr.position.set(door/2, 2.35, z1 + .22); EXT.add(pl); EXT.add(pr);
+  doors = { l:pl, r:pr };
 
   // tabrakan dinding
   const segW = W2 - door;
@@ -643,53 +731,57 @@ function urnFlowers(x, z, s, y0){
   cc(x, z, .4*s);
 }
 
+function luxuryCar(cx, cz, color, ry, wedding){
+  const o = { ry };
+  const at = (dx, dz) => [cx + Math.cos(ry)*dx + Math.sin(ry)*dz, cz - Math.sin(ry)*dx + Math.cos(ry)*dz];
+  const put = (geo, col, dx, y, dz, extra) => { const [x, z] = at(dx, dz); sb(geo, col, x, y, z, Object.assign({ ry }, extra || {})); };
+  put(box(4.1, .6, 1.75), color, 0, .62, 0); put(box(1.2, .22, 1.65), color, 1.45, .98, 0);
+  put(box(2.1, .66, 1.55), color, -.3, 1.24, 0); put(box(2.12, .46, 1.47), 0x2a3440, -.3, 1.28, 0);
+  put(box(.06, .26, 1.4), 0xd8d8d8, 2.06, .62, 0); put(box(.06, .26, 1.4), 0xd8d8d8, -2.06, .62, 0);
+  for (const dx of [-1.3, 1.3]) for (const dz of [-.84, .84]){ put(cyl(.38, .38, .26, 14), 0x1e1e24, dx, .38, dz, { rx:Math.PI/2, order:'YXZ' }); put(cyl(.2, .2, .28, 10), 0xc9c9c9, dx, .38, dz, { rx:Math.PI/2, order:'YXZ' }); }
+  if (wedding){
+    put(box(1.2, .06, .12), 0xf28aa3, 1.3, 1.12, -.3, { ry: ry + .5 }); put(box(1.2, .06, .12), 0xf28aa3, 1.3, 1.12, .3, { ry: ry - .5 });
+    for (let k=0;k<5;k++) put(ico(.13), FLOWERS[k], 1.8, 1.16, -.4 + k*.2);
+  }
+  const hw = Math.abs(Math.cos(ry))*2.1 + Math.abs(Math.sin(ry))*.95, hd = Math.abs(Math.sin(ry))*2.1 + Math.abs(Math.cos(ry))*.95;
+  cb(cx, cz, hw, hd);
+}
+
 function buildForecourt(){
-  // air mancur kembar
-  const wm = new THREE.MeshPhongMaterial({ color:0x6cc4e6, shininess:80, specular:0xffffff });
-  const fx = [];
-  for (const x of [-7, 7]){
-    const z = 13;
-    sb(cyl(2, 2.15, .55, 18), COL.stone, x, .27, z); sb(cyl(2.05, 2.05, .08, 18), COL.trim, x, .58, z);
-    const w = new THREE.Mesh(cyl(1.82, 1.82, .06, 18), wm); w.position.set(x, .5, z); w.receiveShadow = true; scene.add(w);
-    sb(cyl(.22, .32, 1.4, 8), COL.stone, x, 1.2, z); sb(cyl(.95, .3, .3, 14), COL.stone, x, 1.95, z);
-    const w2 = new THREE.Mesh(cyl(.85, .85, .05, 14), wm); w2.position.set(x, 2.08, z); scene.add(w2);
-    sb(cyl(.1, .16, .5, 8), COL.stone, x, 2.3, z); sb(new THREE.SphereGeometry(.16, 10, 8), COL.gold, x, 2.6, z);
-    cc(x, z, 2.25); fx.push([x, z]);
+  // kolam refleksi dengan air mancur kecil
+  const wm = new THREE.MeshPhongMaterial({ color:0x5fb7da, shininess:90, specular:0xffffff });
+  const jets = [];
+  for (const sx of [-1, 1]){
+    const x = sx * 7.2, z = 19;
+    sb(box(5.2, .45, 6.6), 0x4a3a2c, x, .22, z); sb(box(5.3, .06, 6.7), COL.gold, x, .38, z);
+    const w = new THREE.Mesh(box(4.7, .06, 6.1), wm); w.position.set(x, .47, z); w.receiveShadow = true; scene.add(w);
+    for (const dz of [-2, 0, 2]){ sb(cyl(.12, .16, .25, 8), COL.gold, x, .55, z + dz); jets.push([x, z + dz]); }
+    cb(x, z, 2.65, 3.35);
   }
-  const N = 90 * fx.length, pos = new Float32Array(N*3), ph = [];
-  for (let i=0;i<N;i++) ph.push(R(), R()*Math.PI*2, .8 + R()*.4);
+  const N = 34 * jets.length, pos = new Float32Array(N*3), ph = [];
+  for (let i=0;i<N;i++) ph.push(R(), R()*Math.PI*2, .85 + R()*.3);
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  fountainFx = new THREE.Points(g, new THREE.PointsMaterial({ color:0xdff4ff, size:.13, transparent:true, opacity:.85 }));
-  fountainFx.userData = { ph, fx }; scene.add(fountainFx);
+  fountainFx = new THREE.Points(g, new THREE.PointsMaterial({ color:0xe6f7ff, size:.12, transparent:true, opacity:.85 }));
+  fountainFx.userData = { ph, fx:jets }; scene.add(fountainFx);
 
-  // lampu taman & topiary sepanjang red carpet
-  for (const z of [8, 15, 22]) for (const sx of [-1, 1]){
+  // lampu taman & planter sepanjang red carpet
+  for (const z of [14, 20]) for (const sx of [-1, 1]){
     const x = sx * 2.6;
-    sb(cyl(.07, .1, 3, 6), 0x2f2f36, x, 1.5, z); sb(box(.3, .1, .3), 0x2f2f36, x, 3.02, z);
-    sb(new THREE.SphereGeometry(.26, 10, 8), 0xfff2c8, x, 3.3, z); cc(x, z, .3);
+    sb(cyl(.06, .09, 3.2, 6), 0x2a2620, x, 1.6, z); sb(box(.34, .5, .34), 0x2a2620, x, 3.35, z);
+    sb(box(.24, .36, .24), 0xfff2c8, x, 3.35, z); glowSprite(x, 3.35, z, 1.4); cc(x, z, .3);
   }
-  for (const z of [11.5, 18.5]) for (const sx of [-1, 1]){
-    const x = sx * 2.3;
-    sb(cyl(.36, .26, .5, 10), 0xfbf8f1, x, .25, z); sb(cyl(.06, .06, .6, 5), 0x7a5536, x, .8, z);
-    sb(jitter(ico(.55, 1), .05), 0x3f8a37, x, 1.35, z); cc(x, z, .45);
+  for (const z of [17, 23]) for (const sx of [-1, 1]){
+    const x = sx * 2.4;
+    sb(box(.8, .6, .8), 0x4a3a2c, x, .3, z); sb(box(.84, .06, .84), COL.gold, x, .61, z);
+    sb(jitter(ico(.55, 1), .05), 0x3f8a37, x, 1.15, z); cc(x, z, .5);
   }
-  urnFlowers(-3.6, BLD.z1 + 4.4, 1.3); urnFlowers(3.6, BLD.z1 + 4.4, 1.3);
-
-  // mobil pengantin
-  const cx = 12.5, cz = 20.5, white = 0xfaf8f4;
-  sb(box(3.9, .62, 1.7), white, cx, .62, cz); sb(box(1.1, .3, 1.6), white, cx + 1.45, .98, cz);
-  sb(box(2, .72, 1.5), white, cx - .35, 1.28, cz); sb(box(2.02, .5, 1.42), 0x3a4a5c, cx - .35, 1.32, cz);
-  sb(box(.08, .3, 1.5), 0xd8d8d8, cx + 1.98, .6, cz); sb(box(.08, .3, 1.5), 0xd8d8d8, cx - 1.98, .6, cz);
-  for (const dx of [-1.25, 1.25]) for (const dz of [-.82, .82]){ sb(cyl(.38, .38, .28, 14), 0x1e1e24, cx + dx, .38, cz + dz, { rx: Math.PI/2 }); sb(cyl(.18, .18, .3, 10), 0xc9c9c9, cx + dx, .38, cz + dz, { rx: Math.PI/2 }); }
-  sb(box(1.2, .06, .12), 0xf28aa3, cx + 1.3, 1.16, cz - .3, { ry: .5 }); sb(box(1.2, .06, .12), 0xf28aa3, cx + 1.3, 1.16, cz + .3, { ry: -.5 });
-  for (let k=0;k<5;k++) sb(ico(.13), FLOWERS[k], cx + 1.75, 1.2, cz - .4 + k*.2);
-  sb(box(.06, .34, 1.1), 0xffffff, cx - 2.02, .95, cz);
-  cb(cx, cz, 2.05, .95);
-
+  // mobil di driveway
+  luxuryCar(9.8, 7.6, 0xfaf8f4, 0, true);
+  luxuryCar(-9.8, 7.6, 0x1c1d22, 0, false);
   // papan selamat datang (easel)
-  const ex = 4, ez = 19.5;
-  sb(box(.08, 2.3, .08), 0x8a5532, ex - .55, 1.1, ez + .1, { rz: .12 }); sb(box(.08, 2.3, .08), 0x8a5532, ex + .55, 1.1, ez + .1, { rz: -.12 });
-  sb(box(.08, 2.2, .08), 0x8a5532, ex, 1.05, ez - .45, { rx: -.35 });
+  const ex = 3.9, ez = 23.3;
+  sb(box(.08, 2.3, .08), 0x3a2a1c, ex - .55, 1.1, ez + .1, { rz: .12 }); sb(box(.08, 2.3, .08), 0x3a2a1c, ex + .55, 1.1, ez + .1, { rz: -.12 });
+  sb(box(.08, 2.2, .08), 0x3a2a1c, ex, 1.05, ez - .45, { rx: -.35 });
   sb(box(1.75, 2.15, .08), COL.gold, ex, 1.75, ez + .14, { rx: -.1 });
   const wt = canvasTex(256, 320, (c) => {
     c.fillStyle = '#fbf6ec'; c.fillRect(0,0,256,320); c.strokeStyle = '#c9a646'; c.lineWidth = 6; c.strokeRect(10,10,236,300);
@@ -706,6 +798,13 @@ function buildForecourt(){
   cc(ex, ez, .7);
 }
 
+/* doorman di depan lobby */
+let doorman = null;
+function buildDoorman(){
+  doorman = makeChibi({ skin:0xe6b98f, cap:0x6e1f2f, shirt:0x6e1f2f, sleeve:0x6e1f2f, pants:0x2a2a30, shoes:0x1e1e24, front:0xd4af37 });
+  doorman.g.position.set(4.7, 0, BLD.z1 + 1.5); cc(4.7, BLD.z1 + 1.5, .45);
+}
+
 function chairGeos(){
   const gold = [
     box(.54,.06,.5).translate(0,.46,0),
@@ -716,31 +815,93 @@ function chairGeos(){
   return { frame: BGU.mergeBufferGeometries(gold.map(nn)), cushion: nn(box(.5,.07,.46)).translate(0,.52,-.01) };
 }
 
-let petals, couple = {};
+/* TV LED besar: daftar ucapan bergulir */
+const tvState = { items:[], loaded:false, t:0, last:0 };
+function wrapLines(c, text, maxW, maxLines){
+  const words = String(text).split(/\s+/), lines = []; let cur = '';
+  for (const w of words){
+    const t = cur ? cur + ' ' + w : w;
+    if (c.measureText(t).width > maxW && cur){ lines.push(cur); cur = w; if (lines.length >= maxLines) break; }
+    else cur = t;
+  }
+  if (lines.length < maxLines && cur) lines.push(cur);
+  if (lines.length === maxLines && words.join(' ').length > lines.join(' ').length){ let l = lines[maxLines-1]; while (c.measureText(l + '…').width > maxW && l.length) l = l.slice(0, -1); lines[maxLines-1] = l + '…'; }
+  return lines;
+}
+function drawTV(dt){
+  if (!ledTV) return;
+  tvState.t += dt;
+  const c = ledTV.ctx, w = 1024, h = 576;
+  const g = c.createLinearGradient(0,0,w,h); g.addColorStop(0,'#0f1633'); g.addColorStop(1,'#2a1238'); c.fillStyle = g; c.fillRect(0,0,w,h);
+  // header
+  c.fillStyle = 'rgba(212,175,55,.16)'; c.fillRect(0,0,w,92);
+  c.fillStyle = '#e8c766'; c.font = '800 46px "Baloo 2","Nunito",sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'left';
+  c.fillText('Ucapan & Doa', 40, 48);
+  c.textAlign = 'right'; c.font = '700 28px "Pixelify Sans",monospace'; c.fillStyle = '#f6efe2';
+  const total = rsvp.summary ? rsvp.summary.stats.wishes : tvState.items.length;
+  c.fillText(total + ' ucapan', w - 40, 50);
+  // daftar bergulir
+  const top = 108, bottom = h - 70, cardH = 140, items = tvState.items;
+  c.save(); c.beginPath(); c.rect(0, top, w, bottom - top); c.clip();
+  if (!items.length){
+    c.textAlign = 'center'; c.fillStyle = 'rgba(246,239,226,.85)'; c.font = '700 36px "Nunito",sans-serif';
+    c.fillText(tvState.loaded ? 'Belum ada ucapan. Jadilah yang pertama!' : 'Ucapan dari tamu akan tampil di sini.', w/2, (top + bottom)/2);
+  } else {
+    const loopH = items.length * cardH, scroll = items.length > 3 ? (tvState.t * 34) % loopH : 0;
+    for (let rep = 0; rep < (items.length > 3 ? 2 : 1); rep++) items.forEach((it, i) => {
+      const y = top + 10 + i*cardH + rep*loopH - scroll;
+      if (y > bottom || y + cardH < top) return;
+      c.fillStyle = 'rgba(255,255,255,.07)'; rr(c, 30, y, w - 60, cardH - 16, 18); c.fill();
+      c.fillStyle = '#d4af37'; c.fillRect(30, y + 14, 6, cardH - 44);
+      c.textAlign = 'left'; c.fillStyle = '#ffd98a'; c.font = '800 34px "Baloo 2","Nunito",sans-serif';
+      c.fillText(it.name, 56, y + 34);
+      c.fillStyle = 'rgba(246,239,226,.94)'; c.font = '600 28px "Nunito",sans-serif';
+      wrapLines(c, it.msg, w - 120, 2).forEach((ln, k) => c.fillText(ln, 56, y + 76 + k*34));
+    });
+  }
+  c.restore();
+  // ticker bawah
+  c.fillStyle = 'rgba(212,175,55,.9)'; c.fillRect(0, h - 58, w, 58);
+  c.fillStyle = '#2a1a10'; c.font = '700 26px "Nunito",sans-serif'; c.textAlign = 'center';
+  c.fillText('Kirim ucapanmu di meja RSVP dekat pintu masuk  ·  ' + W.hashtag, w/2, h - 28);
+  ledTV.tex.needsUpdate = true;
+}
+async function loadTV(fresh){
+  try { const j = await apiGet({ view:'wishes', limit:20 }, fresh); tvState.items = (j.items || []).filter(it => it.msg); tvState.loaded = true; }
+  catch (e){ tvState.loaded = false; }
+}
+
+let petals, couple = {}, chandGlows = [];
 function buildInterior(){
   const { frame, cushion } = chairGeos();
-  // meja bundar: 10 meja x 5 kursi = 50 kursi tamu
+  // 10 meja bundar x 5 kursi = 50 kursi tamu
   const TABLES = [[-4.8,-5],[4.8,-5],[-9.4,-5],[9.4,-5],[-4.8,-10.2],[4.8,-10.2],[-9.4,-10.2],[9.4,-10.2],[-9.4,-14.8],[9.4,-14.8]];
   TABLES.forEach(([tx, tz], ti) => {
-    sb(cyl(1.05, 1.2, .76, 18), COL.white, tx, .38, tz); sb(cyl(1.12, 1.12, .04, 18), 0xf3e3c3, tx, .78, tz);
-    sb(cyl(.1, .15, .36, 8), COL.gold, tx, .98, tz);
-    for (let k=0;k<5;k++){ const a = k/5*Math.PI*2; sb(ico(.17), FLOWERS[(k+ti)%5], tx + Math.cos(a)*.16, 1.22 + (k%2)*.08, tz + Math.sin(a)*.16); }
-    sb(ico(.18), 0xffffff, tx, 1.38, tz);
+    sb(cyl(1.05, 1.2, .76, 18), COL.white, tx, .38, tz); sb(cyl(1.12, 1.12, .04, 18), 0xf3e9d6, tx, .78, tz);
+    const tall = ti % 2 === 0;
+    if (tall){
+      sb(cyl(.05, .09, 1.5, 8), COL.gold, tx, 1.55, tz); sb(cyl(.3, .08, .18, 10), COL.gold, tx, 2.32, tz);
+      sb(jitter(ico(.42, 1), .05), FLOWERS[ti % 5] === 0xe0566f ? 0xf6c9d2 : 0xffffff, tx, 2.62, tz);
+      for (let k=0;k<5;k++){ const a = k/5*Math.PI*2; sb(ico(.13), FLOWERS[(k+ti)%5], tx + Math.cos(a)*.36, 2.5, tz + Math.sin(a)*.36); }
+    } else {
+      sb(cyl(.1, .15, .36, 8), COL.gold, tx, .98, tz);
+      for (let k=0;k<5;k++){ const a = k/5*Math.PI*2; sb(ico(.17), FLOWERS[(k+ti)%5], tx + Math.cos(a)*.16, 1.22 + (k%2)*.08, tz + Math.sin(a)*.16); }
+    }
     for (const a of [.8, 2.4, 4.0, 5.6]) sb(cyl(.03, .03, .16, 6), 0xfff6e0, tx + Math.cos(a)*.6, .88, tz + Math.sin(a)*.6);
     const off = tx < 0 ? .3 : -.3;
     for (let k=0;k<5;k++){
       const a = k/5*Math.PI*2 + off, x = tx + Math.sin(a)*1.72, z = tz + Math.cos(a)*1.72;
       sb(frame, 0xd8b25a, x, 0, z, { ry:a }); sb(cushion, COL.white, x, 0, z, { ry:a });
+      sb(cyl(.2, .2, .02, 14), COL.gold, tx + Math.sin(a)*.82, .81, tz + Math.cos(a)*.82);
       SEATPOS.push({ x, z, ry:a });
     }
     cc(tx, tz, 2.15);
   });
-  // kursi paling dekat pelaminan diisi duluan
   SEATPOS.sort((a, b) => a.z - b.z || Math.abs(a.x) - Math.abs(b.x) || a.x - b.x);
 
-  // standing flower di sepanjang lorong
+  // standing flower kristal di lorong
   for (const z of [-2.2, -7.6, -12.8]) for (const sx of [-1, 1]){
-    const x = sx * 1.75;
+    const x = sx * 1.8;
     sb(cyl(.18, .24, .08, 10), COL.gold, x, .04, z); sb(cyl(.04, .04, 1.4, 6), COL.gold, x, .74, z); sb(cyl(.28, .1, .2, 10), COL.gold, x, 1.5, z);
     sb(jitter(ico(.42, 1), .04), sx < 0 ? 0xf6c9d2 : 0xffffff, x, 1.85, z);
     for (let k=0;k<4;k++){ const a = k/4*Math.PI*2; sb(ico(.13), 0xe0566f, x + Math.cos(a)*.34, 1.75, z + Math.sin(a)*.34); }
@@ -749,21 +910,21 @@ function buildInterior(){
 
   // pelaminan
   const SZ = -19.1;
-  sb(box(13, .45, 5.4), 0xf5ecdc, 0, .225, SZ); sb(box(13.1, .06, 5.5), COL.gold, 0, .39, SZ); sb(box(2.4, .02, 3.8), COL.carpet, 0, .46, SZ + .6);
-  sb(box(3.4, .22, .8), 0xf5ecdc, 0, .11, SZ + 3.05); sb(box(3.4, .04, .8), COL.carpet, 0, .23, SZ + 3.05);
+  sb(box(13, .45, 5.4), 0xfbf7f0, 0, .225, SZ); sb(box(13.1, .06, 5.5), COL.gold, 0, .39, SZ); sb(box(2.4, .02, 3.8), 0xf6efe2, 0, .46, SZ + .6);
+  sb(box(3.4, .22, .8), 0xfbf7f0, 0, .11, SZ + 3.05); sb(box(3.4, .04, .8), 0xf6efe2, 0, .23, SZ + 3.05);
   for (let x = -6.2; x <= 6.2; x += .55){ if (Math.abs(x) < 1.9) continue; sb(ico(.2), FLOWERS[(x*4|0) & 3 ? 0 : 1], x, .28, SZ + 2.75); sb(ico(.16), COL.leaf, x + .25, .2, SZ + 2.8); }
   cb(0, SZ, 6.55, 2.75);
-  // backdrop
+  // backdrop: dinding bunga putih + bingkai emas + tirai kristal
   sb(box(12.4, 5.6, .3), 0xfbf7f0, 0, 3.25, BLD.z0 + .45); sb(box(12.6, .2, .4), COL.gold, 0, 6.1, BLD.z0 + .45);
-  for (const sx of [-1, 1]){
-    sb(box(.2, 5.6, .4), COL.gold, sx * 6.2, 3.25, BLD.z0 + .45);
-    for (let k=0;k<5;k++) sb(cyl(.2, .26, 5.4, 8), COL.blush, sx * (4.8 + k*.3), 2.95, BLD.z0 + .85 + (k%2)*.1);
-    sb(box(1.6, .3, .35), COL.gold, sx * 5.4, 5.75, BLD.z0 + .85);
+  for (let x = -5.8; x <= 5.8; x += .52) for (let y = .9; y <= 5.7; y += .52){ if (Math.abs(x) < 3.1 && y < 5.2) continue; sb(ico(.27), (x*7 + y*3 | 0) % 4 ? 0xffffff : 0xf6d5dc, x, y, BLD.z0 + .7); }
+  for (const sx of [-1, 1]) sb(box(.2, 5.6, .4), COL.gold, sx * 6.2, 3.25, BLD.z0 + .45);
+  sb(new THREE.TorusGeometry(2.9, .16, 8, 26, Math.PI), COL.gold, 0, 2.65, BLD.z0 + .85);
+  for (const sx of [-2.9, 2.9]) sb(cyl(.16, .16, 2.2, 8), COL.gold, sx, 1.55, BLD.z0 + .85);
+  const crystal = new THREE.MeshBasicMaterial({ color:0xfff6dc });
+  for (let x = -2.6; x <= 2.6; x += .32){
+    const len = 1.6 + Math.cos(x*.6)*1.1;
+    sb(cyl(.012, .012, len, 3), 0xe8e4dc, x, 5.15 - len/2, BLD.z0 + 1.0);
   }
-  sb(new THREE.TorusGeometry(2.9, .16, 8, 26, Math.PI), COL.gold, 0, 2.65, BLD.z0 + .75);
-  for (const sx of [-2.9, 2.9]) sb(cyl(.16, .16, 2.2, 8), COL.gold, sx, 1.55, BLD.z0 + .75);
-  for (let i=0;i<=22;i++){ const a = i/22*Math.PI; sb(ico(.24 + R()*.1), FLOWERS[i%5], Math.cos(a)*2.9, 2.65 + Math.sin(a)*2.9, BLD.z0 + .95); if (i%2) sb(ico(.18), COL.leaf, Math.cos(a)*3.15, 2.65 + Math.sin(a)*3.15, BLD.z0 + .85); }
-  // sofa pelaminan
   sb(box(3.6, .5, 1.1), COL.gold, 0, .7, SZ - 1.6); sb(box(3.4, .3, .95), 0xf3c9cf, 0, 1.05, SZ - 1.55);
   sb(box(3.6, 1.3, .25), COL.gold, 0, 1.4, SZ - 2.1); sb(box(3.3, 1.05, .1), 0xf3c9cf, 0, 1.4, SZ - 1.95);
   urnFlowers(-5.4, SZ + 1.6, 1.15, .46); urnFlowers(5.4, SZ + 1.6, 1.15, .46);
@@ -773,9 +934,9 @@ function buildInterior(){
     c.fillText(W.groom.nick[0] + '&' + W.bride.nick[0], 128, 134);
   });
   const mp = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.7), new THREE.MeshBasicMaterial({ map:mono, transparent:true }));
-  mp.position.set(0, 4.15, BLD.z0 + .62); scene.add(mp);
+  mp.position.set(0, 4.15, BLD.z0 + 1.08); scene.add(mp);
 
-  // kue pengantin & meja dessert
+  // kue pengantin (kiri) & meja dessert (kanan, di bawah TV)
   sb(cyl(.95, 1.05, .78, 16), COL.white, -11, .39, -20.3);
   [[.62,.38],[.46,.36],[.3,.34]].reduce((y, [r, hh]) => { sb(cyl(r, r, hh, 16), 0xfffaf2, -11, y + hh/2, -20.3); sb(cyl(r + .02, r + .02, .04, 16), COL.gold, -11, y + .02, -20.3); return y + hh; }, .78);
   for (let k=0;k<4;k++) sb(ico(.09), FLOWERS[k], -11 + (k-1.5)*.08, 1.95, -20.3);
@@ -783,23 +944,33 @@ function buildInterior(){
   sb(box(4.2, .78, 1.2), COL.white, 11, .39, -20.6); sb(box(4.25, .04, 1.25), 0xf3e3c3, 11, .79, -20.6);
   for (let k=0;k<5;k++){ const x = 9.4 + k*.8; sb(cyl(.25, .25, .05, 12), 0xffffff, x, .83, -20.6); sb(new THREE.SphereGeometry(.22, 10, 6, 0, Math.PI*2, 0, Math.PI/2), k%2 ? 0xd9eef5 : 0xf3e3c3, x, .85, -20.6); }
   cb(11, -20.6, 2.15, .65);
+
+  // TV LED besar di dinding belakang kanan
+  const tvC = document.createElement('canvas'); tvC.width = 1024; tvC.height = 576;
+  const tvTex = new THREE.CanvasTexture(tvC); tvTex.anisotropy = 4;
+  sb(box(7.5, 4.36, .22), 0x111216, 11, 3.95, BLD.z0 + .38); sb(box(7.62, .08, .26), COL.gold, 11, 6.17, BLD.z0 + .38); sb(box(7.62, .08, .26), COL.gold, 11, 1.73, BLD.z0 + .38);
+  const scr = new THREE.Mesh(new THREE.PlaneGeometry(7.1, 3.99), new THREE.MeshBasicMaterial({ map:tvTex }));
+  scr.position.set(11, 3.95, BLD.z0 + .5); scene.add(scr);
+  ledTV = { ctx:tvC.getContext('2d'), tex:tvTex, mesh:scr };
+  drawTV(0);
+
   // meja buku tamu + kotak angpao dekat pintu
   sb(box(2.4, .8, .8), COL.white, -9.6, .4, .3); sb(box(2.5, .06, .85), COL.gold, -9.6, .82, .3);
   sb(box(.7, .05, .5), 0xb23a53, -10.2, .87, .3); sb(box(.66, .02, .46), 0xfdfbf6, -10.2, .9, .3);
   sb(box(.55, .55, .45), COL.gold, -9.0, 1.1, .3); sb(box(.3, .03, .06), 0x3a2414, -9.0, 1.39, .3);
   cb(-9.6, .3, 1.25, .45);
 
-  // chandelier
-  const crystal = new THREE.MeshBasicMaterial({ color:0xfff6dc });
+  // chandelier kristal
   const chand = (x, y, z, s) => {
     sb(cyl(.03, .03, BLD.h - y, 5), COL.gold, x, y + (BLD.h - y)/2, z);
     sb(new THREE.TorusGeometry(.85*s, .06, 6, 20), COL.gold, x, y, z, { rx: Math.PI/2 });
     sb(new THREE.TorusGeometry(.45*s, .05, 6, 14), COL.gold, x, y + .35*s, z, { rx: Math.PI/2 });
     const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
     for (let k=0;k<10;k++){ const a = k/10*Math.PI*2; const m = new THREE.Mesh(ico(.11), crystal); m.position.set(Math.cos(a)*.85*s, -.18, Math.sin(a)*.85*s); g.add(m); }
-    const c = new THREE.Mesh(ico(.24, 1), crystal); c.position.y = -.3; g.add(c);
+    const cm = new THREE.Mesh(ico(.24, 1), crystal); cm.position.y = -.3; g.add(cm);
+    chandGlows.push(glowSprite(0, -.2, 0, 2.6*s, g));
   };
-  chand(-7.1, 6.3, -7.6, .62); chand(7.1, 6.3, -7.6, .62);
+  chand(-7.1, 6.3, -7.6, .62); chand(7.1, 6.3, -7.6, .62); chand(-7.1, 6.3, -12.6, .55); chand(7.1, 6.3, -12.6, .55);
 
   // pengantin
   couple.groom = makeChibi({ skin:0xf0c9a0, hair:0x2a1a10, shirt:0x2d3a5a, sleeve:0x2d3a5a, pants:0x2d3a5a, shoes:0x1e1e24, front:0xffffff, tie:0x1e1e24 });
@@ -817,6 +988,19 @@ function buildInterior(){
   const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   petals = new THREE.Points(pg, new THREE.PointsMaterial({ color:0xffb3c6, size:.15 }));
   petals.userData.sp = sp; scene.add(petals);
+}
+
+/* transisi masuk: fasad & atap memudar + naik, pintu geser terbuka */
+function applyExtFade(f){
+  const e = f*f*(3 - 2*f);
+  for (const m of extMats){
+    const base = m.userData.baseOpacity != null ? m.userData.baseOpacity : 1;
+    const wantT = e < .999 || base < 1 || !!m.userData.alwaysT;
+    if (m.transparent !== wantT){ m.transparent = wantT; m.needsUpdate = true; }
+    m.opacity = base * e; m.depthWrite = e > .6 && base >= 1;
+  }
+  EXT.visible = e > .002;
+  EXT.position.y = (1 - e) * 3.2;
 }
 
 /* tamu yang duduk: satu orang per RSVP "Hadir", maksimal sebanyak kursi */
@@ -946,7 +1130,8 @@ function markVisited3D(p){ p.label.userData.redraw(p.name, true); p.ring.materia
 function freeSpot(x, z, pad){
   if (Math.abs(x) > 23.2 || z < -23.2 || z > 25.2) return false;
   if (x > BLD.x0 - 1 - pad && x < BLD.x1 + 1 + pad && z > BLD.z0 - 1 - pad && z < BLD.z1 + 6.4 + pad) return false;
-  if (Math.abs(x) < 12.2 + pad && z > 1.6 - pad) return false;
+  if (Math.abs(x) < 13.2 + pad && z > 1.4 - pad) return false;
+  if (z > 4.4 - pad && z < 10.8 + pad) return false;
   for (const c of COLC) if (Math.hypot(x-c.x, z-c.z) < c.r+pad) return false;
   for (const b of COLB) if (Math.abs(x-b.x) < b.hw+pad && Math.abs(z-b.z) < b.hd+pad) return false;
   return true;
@@ -1047,7 +1232,9 @@ const busy = () => !started || dlg.open || sheetOpen() || !$('#lb').hidden;
 function registerInteractions(){
   PILLARS.forEach(p => INTER.push({ key:'p:'+p.id, x:p.x, z:p.z, reach:2.75, label:p.act, run:() => openSheet(p.id) }));
   INTER.push({ key:'couple', x:0, z:-15.2, reach:2.6, label:'Ngobrol', run:coupleTalk });
-  INTER.push({ key:'sign', x:4, z:20.6, reach:2.1, label:'Baca Papan', run:signTalk });
+  INTER.push({ key:'sign', x:3.9, z:24.4, reach:2.2, label:'Baca Papan', run:signTalk });
+  INTER.push({ key:'tv', x:11, z:-19.2, reach:2.8, label:'Lihat Ucapan', run:() => openSheet('ucapan') });
+  INTER.push({ key:'doorman', pos:() => doorman.g.position, reach:2.2, label:'Sapa', run:doormanTalk });
   INTER.push({ key:'dog', pos:() => dog.g.position, reach:1.6, label:'Elus Kopi', run:petDog });
 }
 const interPos = it => it.pos ? it.pos() : it;
@@ -1082,10 +1269,16 @@ function coupleTalk(){
 }
 function signTalk(){
   say('Papan Selamat Datang', [
-    'Selamat datang di pernikahan ' + COUPLE + '! Resepsi ada di dalam gedung, masuk lewat pintu utama.',
+    'Selamat datang di pernikahan ' + COUPLE + '! Resepsi ada di Grand Ballroom hotel, masuk lewat pintu lobby.',
     'Geser joystick di kiri bawah untuk jalan. Di laptop bisa pakai WASD atau tombol panah.',
     'Tap lantai untuk jalan ke situ, atau tap pilar langsung. Kalau sudah dekat, tekan tombol A.',
     'Cubit layar (atau scroll) untuk zoom.'
+  ]);
+}
+function doormanTalk(){
+  say('Doorman', [
+    'Selamat datang di ' + W.venue.name + '! Resepsi ' + COUPLE + ' ada di Grand Ballroom.',
+    'Silakan masuk, pintunya terbuka otomatis. Jangan lupa isi RSVP di meja dekat pintu ya.'
   ]);
 }
 function petDog(){ dog.hop = 1; say('Kopi', ['Guk! Guk!', 'Kopi kelihatan senang sekali dielus. Ekornya goyang terus.']); }
@@ -1211,6 +1404,7 @@ function bindRsvp(){
       await loadSummary(true);
       $('#rsvpStats').innerHTML = statsHTML();
       if (guestPager) guestPager(true);
+      loadTV(true);
       if (att === 'Hadir') toast('Kursimu sudah terisi. Cek di depan pelaminan!');
     } catch (err) {
       btn.textContent = prev.sent ? 'Perbarui RSVP' : 'Kirim RSVP';
@@ -1587,24 +1781,37 @@ function update(dt){
   }
   pa.needsUpdate = true;
 
-  // air mancur
+  // air mancur kolam
   if (fountainFx){
     const fa = fountainFx.geometry.attributes.position, ph = fountainFx.userData.ph, fx = fountainFx.userData.fx, per = fa.count / fx.length;
     for (let i=0;i<fa.count;i++){
-      const f = fx[(i / per) | 0], t = (T*.75*ph[i*3+2] + ph[i*3]) % 1, a = ph[i*3+1], r = t * 1.25;
-      fa.setXYZ(i, f[0] + Math.cos(a)*r, 2.5 + 2.2*t - 4.1*t*t, f[1] + Math.sin(a)*r);
+      const f = fx[(i / per) | 0], t = (T*.9*ph[i*3+2] + ph[i*3]) % 1, a = ph[i*3+1], r = t * .55;
+      fa.setXYZ(i, f[0] + Math.cos(a)*r, .55 + 2.6*t - 2.6*t*t, f[1] + Math.sin(a)*r);
     }
     fa.needsUpdate = true;
   }
 
-  // masuk / keluar gedung: atap & fasad disembunyikan saat di dalam
-  const ins = pp.z < BLD.z1 - .2 && pp.z > BLD.z0 && pp.x > BLD.x0 && pp.x < BLD.x1;
+  // masuk / keluar gedung (pakai histeresis supaya tidak kedip di ambang pintu)
+  const inX = pp.x > BLD.x0 && pp.x < BLD.x1 && pp.z > BLD.z0;
+  const ins = inX && (inside ? pp.z < BLD.z1 + .4 : pp.z < BLD.z1 - .5);
   if (ins !== inside){
-    inside = ins; EXT.visible = !ins;
-    if (ins && !store.get('entered', false)){ store.set('entered', true); toast('Selamat datang di dalam! Pilar info ada di sekeliling ruangan.', 3800); }
+    inside = ins;
+    if (ins && !store.get('entered', false)){ store.set('entered', true); toast('Selamat datang di Grand Ballroom! Info ada di sekeliling ruangan.', 3800); }
   }
-  insideK += ((inside ? 1 : 0) - insideK) * Math.min(1, dt*3);
-  hemi.intensity = .58 + insideK*.14; hemi.color.setRGB(1, 1 - insideK*.04, 1 - insideK*.1); sun.intensity = .72 - insideK*.2;
+  const fadeTarget = inside ? 0 : 1;
+  if (extFade !== fadeTarget){ extFade = clamp(extFade + Math.sign(fadeTarget - extFade) * dt / .85, 0, 1); applyExtFade(extFade); }
+  insideK += ((inside ? 1 : 0) - insideK) * Math.min(1, dt*2.4);
+  hemi.intensity = .62 + insideK*.16; sun.intensity = .8 - insideK*.18;
+  // pintu kaca geser
+  const wantOpen = (inside || Math.hypot(pp.x, pp.z - BLD.z1) < 5.5) ? 1 : 0;
+  doorOpen += (wantOpen - doorOpen) * Math.min(1, dt*4);
+  doors.l.position.x = -BLD.door/2 - doorOpen*(BLD.door - .15); doors.r.position.x = BLD.door/2 + doorOpen*(BLD.door - .15);
+  // doorman menoleh ke tamu
+  if (doorman){ const dd2 = Math.hypot(pp.x - doorman.g.position.x, pp.z - doorman.g.position.z); doorman.face = lerpAng(doorman.face, dd2 < 7 ? Math.atan2(pp.x - doorman.g.position.x, pp.z - doorman.g.position.z) : 0, Math.min(1, dt*3)); doorman.g.rotation.y = doorman.face; animChibi(doorman, false, dt, T + 2); }
+  // TV LED (digambar ulang ~30 fps saat terlihat)
+  tvState.last += dt;
+  if (extFade < 1 && tvState.last > 1/30){ drawTV(tvState.last); tvState.last = 0; }
+  for (const gs of chandGlows) gs.material.opacity = .75 + Math.sin(T*2.3 + gs.id)*.12;
 
   // confetti
   if (confetti.life > 0){
@@ -1650,17 +1857,19 @@ function update(dt){
   // camera
   const portrait = innerHeight > innerWidth;
   if (!started){
-    const a = Math.sin(T*.12)*.7; camera.position.set(Math.sin(a)*40, 22, 2 + Math.cos(a)*40); camera.lookAt(0, 4, -2);
+    const a = Math.sin(T*.12)*.6; camera.position.set(Math.sin(a)*44, 16, 4 + Math.cos(a)*44); camera.lookAt(0, 8, -4);
     camTarget.set(pp.x, 0, pp.z);
   } else {
     camTarget.x += (pp.x - camTarget.x) * Math.min(1, dt*5); camTarget.z += (pp.z - camTarget.z) * Math.min(1, dt*5);
-    const k = insideK;
-    const offIn = portrait ? [25, 22] : [17.5, 16], offOut = portrait ? [12, 21] : [9.5, 17];
+    const k = insideK*insideK*(3 - 2*insideK);
+    const offIn = portrait ? [25, 22] : [17.5, 16], offOut = portrait ? [9.5, 22] : [8, 17];
     const oy = offOut[0] + (offIn[0] - offOut[0])*k, oz = offOut[1] + (offIn[1] - offOut[1])*k;
     const want = V3(camTarget.x, oy*zoom, camTarget.z + oz*zoom);
-    camera.position.lerp(want, Math.min(1, dt*3.2));
-    const lookAhead = (portrait ? 9 : 6.5)*(1 - k), lookY = .8 + 3.2*(1 - k);
+    camera.position.lerp(want, Math.min(1, dt*3));
+    const lookAhead = (portrait ? 10 : 7)*(1 - k), lookY = .8 + (portrait ? 5.7 : 4.2)*(1 - k);
     camera.lookAt(camTarget.x, lookY, camTarget.z - lookAhead - (portrait ? .6 : 0)*k);
+    const fov = (portrait ? 46 : 40) + ((portrait ? 38 : 34) - (portrait ? 46 : 40))*k;
+    if (Math.abs(camera.fov - fov) > .01){ camera.fov = fov; camera.updateProjectionMatrix(); }
   }
 }
 
@@ -1681,26 +1890,28 @@ function boot(){
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.id = 'scene'; document.body.prepend(renderer.domElement);
-  scene = new THREE.Scene(); scene.background = new THREE.Color(0xa7dcf2); scene.fog = new THREE.Fog(0xa7dcf2, 42, 85);
+  scene = new THREE.Scene();
+  scene.background = canvasTex(4, 256, (c, w, h) => { const g = c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#6fa3d8'); g.addColorStop(.5,'#a9c8e6'); g.addColorStop(.78,'#f3d3b0'); g.addColorStop(1,'#f0bf92'); c.fillStyle = g; c.fillRect(0,0,w,h); });
+  scene.fog = new THREE.Fog(0xeccdb0, 55, 105);
   camera = new THREE.PerspectiveCamera(38, 1, .5, 200);
-  hemi = new THREE.HemisphereLight(0xffffff, 0x7d8c5e, .58); scene.add(hemi);
-  sun = new THREE.DirectionalLight(0xfff1d6, .72); sun.position.set(18, 32, 14); sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024); const sc = sun.shadow.camera; sc.left = -27; sc.right = 27; sc.top = 27; sc.bottom = -27; sc.near = 1; sc.far = 90;
+  hemi = new THREE.HemisphereLight(0xe8eeff, 0x7a6a55, .62); scene.add(hemi);
+  sun = new THREE.DirectionalLight(0xffdcb0, .8); sun.position.set(22, 30, 18); sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024); const sc = sun.shadow.camera; sc.left = -30; sc.right = 30; sc.top = 30; sc.bottom = -30; sc.near = 1; sc.far = 100;
   sun.shadow.bias = -.0008; sun.shadow.normalBias = .03; scene.add(sun);
 
-  buildGround(); buildBoundary(); buildBuilding(); buildForecourt(); buildPillars(); buildInterior(); buildGuests();
-  buildTrees(); scatter(); flushSB();
+  buildGround(); buildBoundary(); buildBuilding(); buildForecourt(); buildDoorman(); buildPillars(); buildInterior(); buildGuests();
+  buildTrees(); scatter(); flushSB(); applyExtFade(1);
   buildAnimals(); buildPlayer();
-  [['couple', 0, -18.5, 1.6, 3.6], ['sign', 4, 19.5, 1.1, 2.6]].forEach(([k, x, z, w, h]) => {
-    const pr = new THREE.Mesh(box(w*2, h, 1.6), new THREE.MeshBasicMaterial()); pr.visible = false; pr.position.set(x, h/2, z); pr.userData.inter = k; scene.add(pr); PICK.push(pr);
+  [['couple', 0, -18.5, 1.6, 3.6, 0], ['sign', 3.9, 23.3, 1.1, 2.6, 0], ['tv', 11, -21.3, 3.8, 4.4, 1.75], ['doorman', 4.7, BLD.z1 + 1.5, .6, 2.2, 0]].forEach(([k, x, z, w, h, y0]) => {
+    const pr = new THREE.Mesh(box(w*2, h, 1.6), new THREE.MeshBasicMaterial()); pr.visible = false; pr.position.set(x, y0 + h/2, z); pr.userData.inter = k; scene.add(pr); PICK.push(pr);
   });
   registerInteractions();
   camTarget = V3(player.g.position.x, 0, player.g.position.z);
   document.title = 'Undangan ' + COUPLE;
   bindUI(); resize();
   requestAnimationFrame(loop);
-  loadSummary();
-  setInterval(() => { if (!document.hidden && rsvp.ok) loadSummary(); }, 120000);
+  loadSummary().then(() => loadTV());
+  setInterval(() => { if (!document.hidden && rsvp.ok){ loadSummary(); loadTV(); } }, 120000);
 }
 Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), new Promise(r => setTimeout(r, 1800))]).then(boot);
 </script>
