@@ -1,19 +1,19 @@
-# Kebun Restu
+# Undangan Pernikahan 3D
 
-Undangan pernikahan berbentuk game 3D low poly ala Harvest Moon. Tamu menggerakkan karakter di sebuah kebun dan mengunjungi pilar-pilar info: **Acara**, **Lokasi**, **Galeri**, **Cerita Kami**, dan **RSVP**.
+Undangan pernikahan berbentuk game 3D low poly ala Harvest Moon. Tamu mulai di halaman depan gedung resepsi (fasad, kubah, red carpet, air mancur), lalu masuk lewat pintu utama. Begitu di dalam, atap dan dinding depan disembunyikan sehingga seluruh ballroom kelihatan: pelaminan, meja bundar tamu, kue pengantin, dan 6 pilar info: **RSVP**, **Acara**, **Galeri**, **Lokasi**, **Cerita Kami**, dan **Ucapan**.
 
-Satu file statis (`index.html`), Three.js r128 dari CDN, tanpa build step. Mobile-first.
+Satu file statis (`index.html`, Three.js r128 dari CDN) plus satu Vercel function (`api/rsvp.js`). Tanpa build step. Mobile-first.
 
 ## Kontrol
 - HP: joystick kiri bawah, tombol **A** kanan bawah, tap tanah/pilar untuk jalan otomatis, pinch untuk zoom.
 - Laptop: WASD / panah, Space / Enter / E untuk aksi, scroll untuk zoom.
 
 ## Ganti data undangan
-Edit objek `W` di bagian atas `<script>` dalam `index.html` (nama, orang tua, tanggal, jam acara, venue, nomor WhatsApp RSVP, cerita, caption galeri). Semua data saat ini masih **contoh**.
+Edit objek `W` di bagian atas `<script>` dalam `index.html` (nama, orang tua, tanggal, jam acara, venue, nomor WhatsApp RSVP, cerita, caption galeri). Nama venue otomatis tampil di papan nama gedung, nama mempelai di papan selamat datang dan monogram pelaminan.
 
 ## RSVP, kursi tamu, dan pilar Ucapan
 - Tamu mengisi RSVP di pilar **RSVP**. Datanya disimpan di Upstash Redis lewat `api/rsvp.js`.
-- Setiap RSVP "Hadir" muncul sebagai tamu yang duduk di kursi depan pelaminan (50 kursi). Kalau lebih dari 50, yang tampil 50 RSVP "Hadir" terbaru. Tap tamu yang duduk untuk lihat namanya.
+- Setiap RSVP "Hadir" muncul sebagai tamu yang duduk di meja bundar ballroom (10 meja x 5 kursi = 50 kursi, yang paling dekat pelaminan diisi duluan). Kalau lebih dari 50, yang tampil 50 RSVP "Hadir" terbaru. Tap tamu yang duduk untuk lihat namanya.
 - Daftar lengkap tamu yang sudah konfirmasi ada di bawah form RSVP (bisa "Muat lebih banyak").
 - Pilar **Ucapan** menampilkan semua ucapan untuk semua tamu.
 - Satu perangkat = satu RSVP. Kirim ulang dari perangkat yang sama akan memperbarui, bukan menambah.
