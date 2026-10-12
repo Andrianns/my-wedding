@@ -80,7 +80,7 @@ button{cursor:pointer}
 .sh-dot{width:16px;height:16px;transform:rotate(45deg);border:3px solid var(--wood-dk);border-radius:3px;flex:none}
 .sh-head h2{margin:0;flex:1;font-family:var(--f-display);font-weight:800;font-size:24px;line-height:1.1;color:var(--wood-dk);text-wrap:balance}
 .x{width:40px;height:40px;border-radius:10px;border:3px solid var(--wood-dk);background:var(--paper-2);font-weight:800;flex:none}
-.sh-body{overflow:auto;padding:14px 16px 18px;display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain}
+.sh-body{position:relative;overflow:auto;padding:14px 16px 18px;display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain}
 .sh-body p{margin:0;line-height:1.55}
 .lead{font-size:15px}
 .note{font-size:13px;color:var(--ink-2)}
@@ -157,6 +157,47 @@ legend{font-family:var(--f-pixel);font-size:12px;letter-spacing:.06em;color:var(
 .btn:disabled{opacity:.6;cursor:default}
 
 .lb{position:fixed;inset:0;z-index:7;background:var(--shade);display:grid;place-items:center;padding:16px}
+
+/* popup undangan bersegmen */
+.hero{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:2px 0}
+.hero b{font-family:var(--f-display);font-weight:800;font-size:32px;line-height:1.05;color:var(--rose-dk);text-wrap:balance}
+.hero .pix{font-size:14px;font-weight:700}
+.segnav{position:sticky;top:0;flex:none;z-index:2;margin:0 -16px;padding:9px 16px;background:var(--paper);border-bottom:3px dashed var(--paper-2);display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.segnav::-webkit-scrollbar{display:none}
+.segnav button{flex:none;border:2px solid var(--wood-dk);background:var(--white);color:var(--ink);border-radius:999px;padding:4px 11px;font-family:var(--f-pixel);font-size:12px;letter-spacing:.04em;display:inline-flex;align-items:center;gap:6px;transition:background .2s,color .2s}
+.segnav button i{width:8px;height:8px;border-radius:2px;transform:rotate(45deg);background:var(--c)}
+.segnav button.on{background:var(--wood-dk);color:var(--paper)}
+.segnav button.done::after{content:"✓";font-size:11px}
+.seg{display:flex;flex-direction:column;gap:12px;scroll-margin-top:56px}
+.seg + .seg{border-top:3px dashed var(--paper-2);padding-top:16px}
+.seg-h{margin:0;display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;font-size:23px;color:var(--wood-dk)}
+.seg-h i{width:14px;height:14px;transform:rotate(45deg);border:3px solid var(--wood-dk);border-radius:3px;background:var(--c);flex:none}
+.seg-end{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;border-top:3px dashed var(--paper-2);padding-top:16px}
+
+/* tombol HP + HP undangan (tampilan HP sengaja gelap, warna eksplisit) */
+.actlabel{cursor:pointer;color:var(--ink)}
+#btnPhone{width:78px;height:78px;border-radius:24px;background:#1b1b24;border:3px solid var(--wood-dk);box-shadow:0 5px 0 var(--wood-dk);display:grid;place-items:center;position:relative;padding:0;touch-action:manipulation}
+#btnPhone svg{width:36px;height:36px}
+#btnPhone:active{transform:translateY(3px);box-shadow:0 2px 0 var(--wood-dk)}
+#phBadge{position:absolute;top:-8px;right:-8px;min-width:24px;height:24px;border-radius:12px;background:var(--rose);color:#ffffff;font-family:var(--f-pixel);font-weight:700;font-size:13px;line-height:20px;border:2px solid var(--wood-dk);padding:0 5px;box-sizing:border-box}
+.phonewrap{position:fixed;inset:0;z-index:6;background:rgba(20,14,30,.5);display:grid;place-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.phone{width:min(300px,78vw);aspect-ratio:9/18.5;max-height:100%;border-radius:42px;background:#15151c;padding:10px;box-shadow:0 24px 60px rgba(0,0,0,.5),inset 0 0 0 2px #3a3a48;box-sizing:border-box}
+.ph-screen{width:100%;height:100%;border-radius:32px;overflow:hidden;background:linear-gradient(165deg,#2b1d4c 0%,#23304f 48%,#6e1f2f 100%);color:#ffffff;display:flex;flex-direction:column;position:relative}
+.ph-notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:86px;height:22px;border-radius:12px;background:#0b0b0f}
+.ph-status{display:flex;justify-content:space-between;align-items:center;padding:12px 22px 0;font-weight:800;font-size:12px;font-variant-numeric:tabular-nums}
+.ph-hero{text-align:center;padding:22px 16px 6px;display:flex;flex-direction:column;gap:3px}
+.ph-eyebrow{font-family:var(--f-pixel);font-size:11px;letter-spacing:.14em;color:#e8c766}
+.ph-hero strong{font-family:var(--f-display);font-weight:800;font-size:28px;line-height:1.05;color:#ffffff}
+.ph-hero small{font-size:12.5px;font-weight:700;color:#e9dfff}
+.ph-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px 4px;padding:8px 12px;margin-top:auto}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;color:#ffffff;font-family:var(--f-body);font-weight:700;font-size:11px;padding:0;touch-action:manipulation;min-width:0}
+.app .ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:var(--c);box-shadow:inset 0 -3px 0 rgba(0,0,0,.2),0 5px 12px rgba(0,0,0,.3);position:relative}
+.app .ic svg{width:27px;height:27px}
+.app .dot{position:absolute;top:-4px;right:-4px;width:13px;height:13px;border-radius:50%;background:#ff5a6e;border:2px solid #ffffff}
+.app span.nm{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ph-tip{margin:12px 0 0;text-align:center;font-size:11.5px;font-weight:700;color:#cfc6e6}
+.ph-home{display:block;margin:10px auto 8px;width:130px;height:22px;background:none;border:0;padding:0;position:relative}
+.ph-home::after{content:"";position:absolute;left:10px;right:10px;top:9px;height:5px;border-radius:3px;background:rgba(255,255,255,.8)}
 .lb figure{margin:0;width:min(560px,100%);padding:12px;display:flex;flex-direction:column;gap:10px}
 .lb canvas{width:100%;height:auto;border-radius:6px;display:block}
 .lb figcaption{font-weight:800;text-align:center}
@@ -197,8 +238,9 @@ legend{font-family:var(--f-pixel);font-size:12px;letter-spacing:.06em;color:var(
   <div id="toast" class="toast frame" hidden></div>
   <div id="joy" aria-hidden="true"><div id="knob"></div></div>
   <div class="act">
-    <span id="actLabel" class="actlabel frame" hidden>Lihat</span>
+    <button id="actLabel" class="actlabel frame" type="button" hidden>Lihat</button>
     <button id="btnA" aria-label="Aksi" disabled>A</button>
+    <button id="btnPhone" type="button" aria-label="Buka HP undangan" hidden><svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 5h3"/><path d="M12 15.6s-2.6-1.6-2.6-3.6a1.5 1.5 0 0 1 2.6-1 1.5 1.5 0 0 1 2.6 1c0 2-2.6 3.6-2.6 3.6z" fill="#e0566f" stroke="#e0566f"/></svg><span id="phBadge" hidden>6</span></button>
   </div>
 </div>
 
@@ -217,6 +259,19 @@ legend{font-family:var(--f-pixel);font-size:12px;letter-spacing:.06em;color:var(
     </header>
     <div id="sheetBody" class="sh-body"></div>
   </section>
+</div>
+
+<div id="phoneWrap" class="phonewrap" hidden>
+  <div id="phone" class="phone" role="dialog" aria-modal="true" aria-label="HP undangan">
+    <div class="ph-screen">
+      <div class="ph-notch"></div>
+      <div class="ph-status"><span id="phTime">12.00</span><span>5G ▂▄▆</span></div>
+      <div class="ph-hero"><span class="ph-eyebrow">UNDANGAN PERNIKAHAN</span><strong id="phNames">Aji &amp; Vania</strong><small id="phDate"></small></div>
+      <div class="ph-grid" id="phGrid"></div>
+      <p class="ph-tip">Tap app untuk membuka</p>
+      <button class="ph-home" id="phHome" type="button" aria-label="Tutup HP"></button>
+    </div>
+  </div>
 </div>
 
 <div id="lb" class="lb" hidden>
@@ -312,15 +367,15 @@ function copyText(text, btn){
   try { navigator.clipboard.writeText(text).then(done, fallback); } catch(e) { fallback(); }
 }
 
-/* ---------- titik info (objek di foyer) ---------- */
+/* ---------- segmen info undangan ---------- */
 const PILLARS = [
-  // foyer: kiri-kanan red carpet tepat setelah pintu masuk, menghadap lorong
-  { id:'rsvp',   name:'RSVP',        act:'Isi RSVP',      color:0x8d5bc9, css:'#8d5bc9', x:-3.7, z:  .7, ry: .62 },
-  { id:'acara',  name:'Acara',       act:'Lihat Acara',   color:0xe0566f, css:'#e0566f', x: 3.7, z:  .7, ry:-.62 },
-  { id:'lokasi', name:'Lokasi',      act:'Lihat Lokasi',  color:0x3f86d0, css:'#3f86d0', x:-4.1, z:-1.5, ry: .62 },
-  { id:'galeri', name:'Galeri',      act:'Buka Galeri',   color:0xe3a22a, css:'#e3a22a', x: 4.1, z:-1.5, ry:-.62 },
-  { id:'cerita', name:'Cerita Kami', act:'Baca Cerita',   color:0x4f9a3a, css:'#4f9a3a', x:-3.7, z:-3.7, ry: .62 },
-  { id:'ucapan', name:'Ucapan',      act:'Baca Ucapan',   color:0x2a9d8f, css:'#2a9d8f', x: 3.7, z:-3.7, ry:-.62 }
+  // urutan segmen di popup undangan & app di HP
+  { id:'acara',  name:'Acara',       act:'Lihat Acara',   color:0xe0566f, css:'#e0566f' },
+  { id:'cerita', name:'Cerita Kami', act:'Baca Cerita',   color:0x4f9a3a, css:'#4f9a3a' },
+  { id:'lokasi', name:'Lokasi',      act:'Lihat Lokasi',  color:0x3f86d0, css:'#3f86d0' },
+  { id:'galeri', name:'Galeri',      act:'Buka Galeri',   color:0xe3a22a, css:'#e3a22a' },
+  { id:'rsvp',   name:'RSVP',        act:'Isi RSVP',      color:0x8d5bc9, css:'#8d5bc9' },
+  { id:'ucapan', name:'Ucapan',      act:'Baca Ucapan',   color:0x2a9d8f, css:'#2a9d8f' }
 ];
 let visited = store.get('visited', []);
 if (!Array.isArray(visited)) visited = [];
@@ -937,6 +992,8 @@ function buildInterior(){
   const mp = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.7), new THREE.MeshBasicMaterial({ map:mono, transparent:true }));
   mp.position.set(0, 4.15, BLD.z0 + 1.08); scene.add(mp);
 
+  urnFlowers(-3.9, .4, 1.35); urnFlowers(3.9, .4, 1.35);
+
   // kue pengantin (kiri) & meja dessert (kanan, di bawah TV)
   sb(cyl(.95, 1.05, .78, 16), COL.white, -11, .39, -20.3);
   [[.62,.38],[.46,.36],[.3,.34]].reduce((y, [r, hh]) => { sb(cyl(r, r, hh, 16), 0xfffaf2, -11, y + hh/2, -20.3); sb(cyl(r + .02, r + .02, .04, 16), COL.gold, -11, y + .02, -20.3); return y + hh; }, .78);
@@ -1065,135 +1122,7 @@ function glowRing(color, x, z){
   r.rotation.x = -Math.PI/2; r.position.set(x, .05, z); scene.add(r); return r;
 }
 
-/* titik info: objek nyata di foyer, kiri-kanan red carpet setelah pintu masuk */
 const PICK = [];
-function infoTex(w, h, title, accent, body){
-  return canvasTex(w, h, (c) => {
-    c.fillStyle = '#fbf6ec'; c.fillRect(0,0,w,h);
-    c.strokeStyle = '#c9a646'; c.lineWidth = 8; c.strokeRect(8,8,w-16,h-16);
-    c.fillStyle = accent; c.fillRect(8, 8, w-16, 70);
-    c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.font = '700 40px "Pixelify Sans","Baloo 2",monospace'; c.fillText(title, w/2, 45);
-    c.textBaseline = 'alphabetic';
-    if (body) body(c, w, h);
-  });
-}
-function stationModel(p, g){
-  const gold = COL.gold, dark = 0x2a2620;
-  if (p.id === 'rsvp'){
-    // meja penerima tamu: buku tamu + kotak angpao
-    mesh(box(2.1, .8, .8), COL.white, 0, .4, 0, g); mesh(box(2.18, .05, .86), gold, 0, .82, 0, g);
-    mesh(box(2.12, .1, .02), gold, 0, .62, .41, g);
-    const sign = canvasTex(512, 96, (c) => { c.fillStyle = '#6e1f2f'; c.fillRect(0,0,512,96); c.fillStyle = '#ffd98a'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '800 46px "Baloo 2","Nunito",sans-serif'; c.fillText('BUKU TAMU · RSVP', 256, 52); });
-    const sp = new THREE.Mesh(new THREE.PlaneGeometry(1.7, .32), new THREE.MeshBasicMaterial({ map:sign })); sp.position.set(0, .42, .405); g.add(sp);
-    mesh(box(.9, .04, .6), 0x8d5bc9, -.35, .86, .02, g);
-    const pl = mesh(box(.42, .03, .56), 0xfffdf6, -.56, .9, .02, g); pl.rotation.z = .06;
-    const pr = mesh(box(.42, .03, .56), 0xfffdf6, -.14, .9, .02, g); pr.rotation.z = -.06;
-    const pen = mesh(cyl(.02, .02, .4, 5), 0x1e1e24, -.1, .94, .16, g); pen.rotation.z = Math.PI/2; pen.rotation.y = .5;
-    mesh(box(.55, .55, .45), gold, .6, 1.11, -.05, g); mesh(box(.32, .03, .06), 0x3a2414, .6, 1.4, -.05, g);
-    mesh(box(.57, .08, .47), 0xb8902a, .6, 1.0, -.05, g);
-    mesh(cyl(.08, .1, .22, 8), 0xffffff, .95, .95, -.25, g);
-    for (let k=0;k<4;k++) mesh(ico(.09), FLOWERS[k], .95 + (k%2 ? .06 : -.06), 1.12 + (k>1 ? .06 : 0), -.25, g);
-  } else if (p.id === 'acara'){
-    // roll-up banner jadwal acara
-    const tex = infoTex(256, 512, 'ACARA', '#e0566f', (c, w) => {
-      c.fillStyle = '#3a2414'; c.textAlign = 'center';
-      c.font = '800 30px "Baloo 2","Nunito",sans-serif'; c.fillText(W.dateLabel.split(', ')[0] || '', w/2, 130);
-      c.font = '800 34px "Baloo 2","Nunito",sans-serif'; c.fillText((W.dateLabel.split(', ')[1] || W.dateLabel), w/2, 170);
-      let y = 240;
-      for (const ev of W.events){
-        c.fillStyle = '#b23a53'; c.font = '800 30px "Baloo 2","Nunito",sans-serif'; c.fillText(ev.name, w/2, y);
-        c.fillStyle = '#5a4030'; c.font = '700 24px "Nunito",sans-serif'; c.fillText(ev.time, w/2, y + 34);
-        y += 110;
-      }
-      c.fillStyle = '#c9a646'; c.fillRect(60, 470, w - 120, 4);
-    });
-    mesh(box(1.2, .1, .36), 0xc9c9cf, 0, .05, 0, g);
-    mesh(box(1.14, 2.36, .03), dark, 0, 1.3, -.02, g);
-    const b = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.3), new THREE.MeshBasicMaterial({ map:tex })); b.position.set(0, 1.3, .0); g.add(b);
-    mesh(box(1.18, .05, .05), 0xc9c9cf, 0, 2.47, -.01, g);
-  } else if (p.id === 'lokasi'){
-    // papan peta di easel
-    const mc = document.createElement('canvas'); mc.width = 640; mc.height = 360; drawMap(mc);
-    const tex = new THREE.CanvasTexture(mc);
-    const legL = mesh(box(.07, 2.3, .07), 0x3a2a1c, -.6, 1.1, .08, g); legL.rotation.z = .1;
-    const legR = mesh(box(.07, 2.3, .07), 0x3a2a1c, .6, 1.1, .08, g); legR.rotation.z = -.1;
-    const legB = mesh(box(.07, 2.2, .07), 0x3a2a1c, 0, 1.05, -.42, g); legB.rotation.x = -.35;
-    mesh(box(1.95, 1.2, .07), gold, 0, 1.55, .14, g);
-    const b = new THREE.Mesh(new THREE.PlaneGeometry(1.84, 1.04), new THREE.MeshBasicMaterial({ map:tex })); b.position.set(0, 1.55, .18); g.add(b);
-    const head = canvasTex(256, 64, (c) => { c.fillStyle = '#3f86d0'; c.fillRect(0,0,256,64); c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '700 36px "Pixelify Sans",monospace'; c.fillText('LOKASI', 128, 34); });
-    const hp = new THREE.Mesh(new THREE.PlaneGeometry(.9, .24), new THREE.MeshBasicMaterial({ map:head })); hp.position.set(0, 2.27, .18); g.add(hp);
-    mesh(box(.04, .3, .04), gold, -.44, 2.18, .16, g); mesh(box(.04, .3, .04), gold, .44, 2.18, .16, g);
-  } else if (p.id === 'galeri'){
-    // photo wall
-    const tex = canvasTex(512, 384, (c) => {
-      c.fillStyle = '#23304f'; c.fillRect(0,0,512,384);
-      c.fillStyle = '#ffd98a'; c.textAlign = 'center'; c.font = '700 34px "Pixelify Sans",monospace'; c.fillText('GALERI', 256, 40);
-      const tmp = document.createElement('canvas'); tmp.width = 160; tmp.height = 120;
-      for (let i=0;i<6;i++){
-        const col = i % 3, row = (i / 3) | 0, x = 26 + col*160, y = 64 + row*156, rot = (i%2 ? 1 : -1) * .04;
-        paintScene(tmp, i);
-        c.save(); c.translate(x + 70, y + 70); c.rotate(rot);
-        c.fillStyle = '#ffffff'; c.fillRect(-70, -66, 140, 138); c.drawImage(tmp, -62, -58, 124, 93);
-        c.fillStyle = '#5a4030'; c.font = '600 13px "Nunito",sans-serif'; c.fillText((W.gallery[i] || '').slice(0, 18), 0, 58);
-        c.restore();
-      }
-    });
-    for (const sx of [-1, 1]){ mesh(box(.1, 2.5, .1), gold, sx*1.1, 1.25, 0, g); mesh(box(.5, .06, .4), gold, sx*1.1, .03, 0, g); }
-    mesh(box(2.2, 1.66, .06), 0x1a2238, 0, 1.45, 0, g);
-    const b = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.575), new THREE.MeshBasicMaterial({ map:tex })); b.position.set(0, 1.45, .04); g.add(b);
-  } else if (p.id === 'cerita'){
-    // buku kenangan di podium
-    mesh(cyl(.42, .48, .1, 14), gold, 0, .05, 0, g); mesh(cyl(.22, .28, 1.0, 12), 0xf5ecdb, 0, .6, 0, g);
-    mesh(box(.9, .06, .66), gold, 0, 1.12, 0, g).rotation.x = .38;
-    const pageTex = (left) => canvasTex(160, 220, (c) => {
-      c.fillStyle = '#fffaf0'; c.fillRect(0,0,160,220); c.fillStyle = '#4f9a3a'; c.textAlign = 'center';
-      c.font = '800 22px "Baloo 2",sans-serif'; c.fillText(left ? 'Cerita' : 'Kami', 80, 34);
-      c.fillStyle = '#7a5a3e'; c.font = '700 16px "Pixelify Sans",monospace';
-      const st = W.story.slice(left ? 0 : 2, left ? 2 : 4);
-      st.forEach((s, i) => { c.fillText(s.yr, 80, 78 + i*70); c.fillStyle = 'rgba(122,90,62,.4)'; c.fillRect(30, 90 + i*70, 100, 3); c.fillRect(30, 102 + i*70, 80, 3); c.fillStyle = '#7a5a3e'; });
-    });
-    const bk = new THREE.Group(); bk.position.set(0, 1.2, .02); bk.rotation.x = -(Math.PI/2 - .38); g.add(bk);
-    mesh(box(.86, .62, .04), 0x4f9a3a, 0, 0, -.02, bk);
-    const lp = new THREE.Mesh(new THREE.PlaneGeometry(.4, .56), new THREE.MeshBasicMaterial({ map:pageTex(true) })); lp.position.set(-.21, 0, .02); lp.rotation.y = .12; bk.add(lp);
-    const rp = new THREE.Mesh(new THREE.PlaneGeometry(.4, .56), new THREE.MeshBasicMaterial({ map:pageTex(false) })); rp.position.set(.21, 0, .02); rp.rotation.y = -.12; bk.add(rp);
-    mesh(box(.04, .3, .01), 0xe0566f, .05, -.38, .03, bk);
-  } else if (p.id === 'ucapan'){
-    // papan kartu ucapan
-    const tex = infoTex(320, 384, 'UCAPAN', '#2a9d8f', (c, w, h) => {
-      const cols = ['#ffd6e0', '#fff1b8', '#d4f0e8', '#e3d9ff', '#ffe2c6', '#d9eefc'], rnd = mulberry32(5);
-      for (let i=0;i<9;i++){
-        const x = 26 + (i%3)*96, y = 96 + ((i/3)|0)*88, r = (rnd() - .5) * .2;
-        c.save(); c.translate(x + 40, y + 34); c.rotate(r); c.fillStyle = cols[i % cols.length]; c.fillRect(-40, -32, 80, 66);
-        c.fillStyle = 'rgba(90,64,48,.45)'; c.fillRect(-30, -16, 60, 4); c.fillRect(-30, -4, 48, 4); c.fillRect(-30, 8, 54, 4);
-        c.fillStyle = '#e0566f'; c.beginPath(); c.arc(28, -24, 5, 0, 7); c.fill(); c.restore();
-      }
-      c.fillStyle = '#5a4030'; c.textAlign = 'center'; c.font = '700 18px "Nunito",sans-serif'; c.fillText('Semua ucapan juga tampil di TV', w/2, h - 22);
-    });
-    const legL = mesh(box(.07, 2.3, .07), 0x3a2a1c, -.55, 1.1, .08, g); legL.rotation.z = .1;
-    const legR = mesh(box(.07, 2.3, .07), 0x3a2a1c, .55, 1.1, .08, g); legR.rotation.z = -.1;
-    const legB = mesh(box(.07, 2.2, .07), 0x3a2a1c, 0, 1.05, -.42, g); legB.rotation.x = -.35;
-    mesh(box(1.5, 1.8, .07), gold, 0, 1.45, .14, g);
-    const b = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.68), new THREE.MeshBasicMaterial({ map:tex })); b.position.set(0, 1.45, .18); g.add(b);
-    mesh(box(.9, .06, .3), gold, 0, .55, .3, g);
-    for (let k=0;k<3;k++) mesh(box(.22, .02, .16), [0xffd6e0, 0xfff1b8, 0xd4f0e8][k], -.25 + k*.25, .6 + k*.02, .3, g);
-  }
-}
-function buildPillars(){
-  PILLARS.forEach(p => {
-    const g = new THREE.Group(); g.position.set(p.x, 0, p.z); g.rotation.y = p.ry; scene.add(g);
-    stationModel(p, g);
-    // titik berdiri di depan objek (arah hadap objek)
-    p.ix = p.x + Math.sin(p.ry) * 1.25; p.iz = Math.min(p.z + Math.cos(p.ry) * 1.25, BLD.z1 - .8);
-    p.ring = glowRing(p.color, p.ix, p.iz); p.ring.scale.setScalar(.5);
-    p.label = labelSprite(p.name, p.css); p.label.position.set(p.x, 3.15, p.z); scene.add(p.label);
-    cc(p.x, p.z, .95);
-    const proxy = new THREE.Mesh(box(p.id === 'galeri' ? 2.2 : 1.7, 2.5, .9), new THREE.MeshBasicMaterial()); proxy.visible = false;
-    proxy.position.set(0, 1.25, 0); proxy.userData.inter = 'p:' + p.id; g.add(proxy); PICK.push(proxy);
-    if (visited.includes(p.id)) markVisited3D(p);
-  });
-}
-function markVisited3D(p){ p.label.userData.redraw(p.name, true); p.ring.material.color.setHex(0xf2b23a); }
 
 /* scatter: grass, flowers, bushes */
 function freeSpot(x, z, pad){
@@ -1296,10 +1225,10 @@ const joy = { x:0, y:0, id:null };
 let walkTo = null, stuckT = 0, lastDist = 1e9;
 let started = false, zoom = 1, T = 0, camTarget = null, nearest = null;
 const sheetOpen = () => !$('#sheetWrap').hidden;
-const busy = () => !started || dlg.open || sheetOpen() || !$('#lb').hidden;
+const busy = () => !started || dlg.open || sheetOpen() || phoneOpen || !$('#lb').hidden;
+let phoneOpen = false, phoneMode = false, welcomeDone = false, welcomeQueued = false;
 
 function registerInteractions(){
-  PILLARS.forEach(p => INTER.push({ key:'p:'+p.id, x:p.ix, z:p.iz, reach:2.4, label:p.act, run:() => openSheet(p.id) }));
   INTER.push({ key:'couple', x:0, z:-15.2, reach:2.6, label:'Ngobrol', run:coupleTalk });
   INTER.push({ key:'sign', x:3.9, z:24.4, reach:2.2, label:'Baca Papan', run:signTalk });
   INTER.push({ key:'tv', x:11, z:-19.2, reach:2.8, label:'Lihat Ucapan', run:() => openSheet('ucapan') });
@@ -1332,7 +1261,7 @@ function coupleTalk(){
   ] : [
     'Halo, ' + guest + '! Makasih sudah datang ke resepsi kami.',
     'Kami, ' + W.groom.nick + ' dan ' + W.bride.nick + ', senang sekali kamu ada di sini.',
-    'Info undangan ada di foyer dekat pintu masuk: meja RSVP, jadwal acara, peta lokasi, photo wall, buku cerita kami, dan papan ucapan. Tap saja yang mau dilihat.'
+    'Semua info undangan, dari acara, cerita, lokasi, galeri, RSVP sampai ucapan, ada di HP-mu. Tombolnya di kanan bawah.'
   ];
   say(COUPLE, lines);
 }
@@ -1340,14 +1269,14 @@ function signTalk(){
   say('Papan Selamat Datang', [
     'Selamat datang di pernikahan ' + COUPLE + '! Resepsi ada di Grand Ballroom hotel, masuk lewat pintu lobby.',
     'Geser joystick di kiri bawah untuk jalan. Di laptop bisa pakai WASD atau tombol panah.',
-    'Tap lantai untuk jalan ke situ. Di dalam, tap papan atau meja info untuk langsung membukanya.',
+    'Tap lantai untuk jalan ke situ. Begitu masuk ballroom, undangan lengkapnya langsung terbuka.',
     'Cubit layar (atau scroll) untuk zoom.'
   ]);
 }
 function doormanTalk(){
   say('Doorman', [
     'Selamat datang di ' + W.venue.name + '! Resepsi ' + COUPLE + ' ada di Grand Ballroom.',
-    'Silakan masuk, pintunya terbuka otomatis. Semua info undangan ada di kiri-kanan pintu masuk, jangan lupa isi RSVP di meja buku tamu ya.'
+    'Silakan masuk, pintunya terbuka otomatis. Begitu di dalam ballroom, undangan lengkapnya langsung muncul. Jangan lupa isi RSVP ya.'
   ]);
 }
 function petDog(){ dog.hop = 1; say('Kopi', ['Guk! Guk!', 'Kopi kelihatan senang sekali dielus. Ekornya goyang terus.']); }
@@ -1421,31 +1350,193 @@ const SHEETS = {
     <button class="btn ghost more-btn" type="button" id="wishMore" hidden>Muat lebih banyak</button>`;
   }
 };
-let curSheet = null;
-function openSheet(id){
+let curSheet = null, sheetMode = null, sheetFromPhone = false, sheetClosing = false;
+const reduceMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+function anim(el, frames, opts){ if (!el || reduceMotion() || !el.animate) return null; try { return el.animate(frames, opts); } catch (e){ return null; } }
+const SECTION_ORDER = PILLARS.map(p => p.id);
+function sectionHTML(id){
   const p = PILLARS.find(q => q.id === id);
-  curSheet = id; walkTo = null; marker.visible = false;
-  $('#sheetTitle').textContent = p.name;
-  $('#sheetDot').style.background = p.css;
-  $('#sheetBody').innerHTML = SHEETS[id]();
-  $('#sheetWrap').hidden = false; $('#sheetBody').scrollTop = 0;
-  if (id === 'lokasi'){ drawMap($('#mapCv')); $('#copyAddr').onclick = e => copyText(W.venue.name + ', ' + W.venue.address, e.currentTarget); }
-  if (id === 'galeri'){ document.querySelectorAll('.pol').forEach(b => { paintScene(b.querySelector('canvas'), +b.dataset.i); b.onclick = () => openLb(+b.dataset.i); }); }
-  if (id === 'rsvp'){ bindRsvp(); guestPager = makePager('list', $('#glist'), $('#gMore'), renderGuest, 'Belum ada yang konfirmasi. Jadilah yang pertama!'); guestPager(); }
-  if (id === 'ucapan'){
-    $('#writeWish').onclick = () => { openSheet('rsvp'); setTimeout(() => { const m = $('#rsvpMsg'); if (m){ m.scrollIntoView({ block:'center' }); m.focus({ preventScroll:true }); } }, 60); };
-    makePager('wishes', $('#wishList'), $('#wishMore'), renderWish, 'Belum ada ucapan. Tulis yang pertama di meja RSVP.')();
+  return `<section class="seg" id="seg-${id}" data-id="${id}" style="--c:${p.css}"><h3 class="seg-h"><i></i>${esc(p.name)}</h3>${SHEETS[id]()}</section>`;
+}
+function openSheet(id, opts){
+  opts = opts || {};
+  const all = id === 'all';
+  curSheet = id; sheetMode = opts.welcome ? 'welcome' : (all ? 'all' : 'one'); sheetFromPhone = !!opts.fromPhone;
+  walkTo = null; marker.visible = false;
+  $('#sheetBody').onscroll = null;
+  if (all){
+    $('#sheetTitle').textContent = 'Undangan';
+    $('#sheetDot').style.background = '#b23a53';
+    $('#sheetBody').innerHTML = `
+      <div class="hero"><span class="eyebrow">${opts.welcome ? 'Selamat datang di Grand Ballroom' : 'Undangan pernikahan'}</span><b>${esc(COUPLE)}</b><span class="pix">${esc(W.dateLabel)}</span><span class="cd">${esc(cdText())}</span></div>
+      <nav class="segnav" id="segNav" aria-label="Bagian undangan">${SECTION_ORDER.map(sid => { const p = PILLARS.find(q => q.id === sid); return `<button type="button" data-go="${sid}" style="--c:${p.css}" class="${visited.includes(sid) ? 'done' : ''}"><i></i>${esc(p.name)}</button>`; }).join('')}</nav>
+      ${SECTION_ORDER.map(sectionHTML).join('')}
+      <div class="seg-end"><p class="note">Semua info ini bisa dibuka lagi kapan saja lewat HP di kanan bawah.</p><button class="btn big" type="button" id="sheetDone">${opts.welcome ? 'Selesai, lanjut ke ballroom' : 'Tutup'}</button></div>`;
+  } else {
+    const p = PILLARS.find(q => q.id === id);
+    $('#sheetTitle').textContent = p.name;
+    $('#sheetDot').style.background = p.css;
+    $('#sheetBody').innerHTML = SHEETS[id]();
   }
-  if (!visited.includes(id)){ visited.push(id); store.set('visited', visited); markVisited3D(p); updateProgress(); }
+  bindSections(all ? SECTION_ORDER : [id], all);
+  const wrap = $('#sheetWrap'), sh = $('#sheet'), wasHidden = wrap.hidden;
+  wrap.hidden = false; $('#sheetBody').scrollTop = 0;
+  if (wasHidden){
+    anim(wrap, [{ opacity:0 }, { opacity:1 }], { duration:240, easing:'ease-out' });
+    const r = sh.getBoundingClientRect(), o = opts.origin;
+    sh.style.transformOrigin = o ? `${o.x - r.left}px ${o.y - r.top}px` : '50% 85%';
+    anim(sh, [{ transform:'scale(.18)', opacity:0 }, { transform:'scale(1.015)', opacity:1, offset:.72 }, { transform:'scale(1)', opacity:1 }], { duration:440, easing:'cubic-bezier(.2,.8,.3,1)' });
+  }
+  if (!all) markSeen(id);
+  else {
+    // tandai segmen yang sudah terlihat atau sudah dilewati saat di-scroll
+    const body = $('#sheetBody'); let ticking = false;
+    const track = () => {
+      ticking = false;
+      const lim = body.scrollTop + body.clientHeight * .6;
+      const atEnd = body.scrollTop + body.clientHeight >= body.scrollHeight - 6;
+      let active = null;
+      document.querySelectorAll('#sheetBody .seg').forEach(el => { if (atEnd || el.offsetTop < lim){ markSeen(el.dataset.id); active = el.dataset.id; } });
+      if (active && active !== track.last){
+        track.last = active;
+        document.querySelectorAll('#segNav button').forEach(b => b.classList.toggle('on', b.dataset.go === active));
+        const nb = document.querySelector(`#segNav [data-go="${active}"]`), nav = $('#segNav');
+        if (nb && nav && nav.scrollTo) nav.scrollTo({ left: nb.offsetLeft - 16, behavior:'smooth' });
+      }
+    };
+    body.onscroll = () => { if (!ticking){ ticking = true; requestAnimationFrame(track); } };
+    requestAnimationFrame(track);
+  }
   refreshBusy();
   setTimeout(() => $('#sheetClose').focus({ preventScroll:true }), 30);
 }
+function bindSections(ids, all){
+  if (ids.includes('lokasi')){ drawMap($('#mapCv')); $('#copyAddr').onclick = e => copyText(W.venue.name + ', ' + W.venue.address, e.currentTarget); }
+  if (ids.includes('galeri')) document.querySelectorAll('.pol').forEach(b => { paintScene(b.querySelector('canvas'), +b.dataset.i); b.onclick = () => openLb(+b.dataset.i); });
+  if (ids.includes('rsvp')){ bindRsvp(); guestPager = makePager('list', $('#glist'), $('#gMore'), renderGuest, 'Belum ada yang konfirmasi. Jadilah yang pertama!'); guestPager(); }
+  if (ids.includes('ucapan')){
+    $('#writeWish').onclick = () => {
+      const focusMsg = () => { const m = $('#rsvpMsg'); if (m){ m.scrollIntoView({ block:'center', behavior:'smooth' }); setTimeout(() => m.focus({ preventScroll:true }), 350); } };
+      if (all) focusMsg(); else { openSheet('rsvp', { fromPhone:sheetFromPhone }); setTimeout(focusMsg, 80); }
+    };
+    makePager('wishes', $('#wishList'), $('#wishMore'), renderWish, 'Belum ada ucapan. Tulis yang pertama lewat RSVP.')();
+  }
+  if (all){
+    document.querySelectorAll('#segNav button').forEach(b => b.onclick = () => { const el = document.getElementById('seg-' + b.dataset.go); if (el) el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block:'start' }); });
+    $('#sheetDone').onclick = closeSheet;
+  }
+}
+function markSeen(id){
+  if (!visited.includes(id)){ visited.push(id); store.set('visited', visited); updateProgress(); }
+  const b = document.querySelector(`#segNav [data-go="${id}"]`); if (b) b.classList.add('done');
+}
 function closeSheet(){
-  $('#sheetWrap').hidden = true; curSheet = null; refreshBusy();
+  const wrap = $('#sheetWrap');
+  if (sheetClosing || wrap.hidden) return;
+  sheetClosing = true;
+  const done = () => { wrap.hidden = true; sheetClosing = false; afterSheetClose(); };
+  anim(wrap, [{ opacity:1 }, { opacity:0 }], { duration:220, easing:'ease-in' });
+  const a = anim($('#sheet'), [{ transform:'scale(1)', opacity:1 }, { transform:'translateY(18px) scale(.92)', opacity:0 }], { duration:220, easing:'ease-in' });
+  if (a) a.onfinish = done; else done();
+}
+function afterSheetClose(){
+  $('#sheetBody').onscroll = null;
+  const mode = sheetMode, fromPhone = sheetFromPhone;
+  curSheet = null; sheetMode = null; sheetFromPhone = false; refreshBusy();
+  if (mode === 'welcome' && !welcomeDone){ welcomeDone = true; store.set('welcomeDone', true); setPhoneMode(true, true); }
   if (visited.length >= PILLARS.length && !finaleDone){
     finaleDone = true; store.set('finale', true); burstConfetti();
-    setTimeout(() => say(COUPLE, ['Yeay! Semua info sudah kamu lihat.', 'Doa dan kehadiranmu berarti banget buat kami. Sampai jumpa di hari ' + W.dateLabel + '!']), 500);
+    setTimeout(() => say(COUPLE, ['Yeay! Semua info undangan sudah kamu baca.', 'Doa dan kehadiranmu berarti banget buat kami. Sampai jumpa di hari ' + W.dateLabel + '!']), 500);
+    return;
   }
+  if (fromPhone) openPhone();
+}
+
+/* ---------- HP undangan ---------- */
+const APP_ICONS = {
+  acara:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 14h3v3H8z" fill="#ffffff"/>',
+  cerita:'<path d="M3.5 5.5c3-1.5 6-1.5 8.5.6 2.5-2.1 5.5-2.1 8.5-.6v13.6c-3-1.5-6-1.5-8.5.6-2.5-2.1-5.5-2.1-8.5-.6z"/><path d="M12 6.1v13.6"/>',
+  lokasi:'<path d="M12 21.5s6.8-6 6.8-11.6a6.8 6.8 0 0 0-13.6 0c0 5.6 6.8 11.6 6.8 11.6z"/><circle cx="12" cy="10" r="2.5"/>',
+  galeri:'<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+  rsvp:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 8l9 6 9-6"/>',
+  ucapan:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
+  semua:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+  musik:'<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>'
+};
+const APPS = PILLARS.map(p => ({ id:p.id, name:p.name === 'Cerita Kami' ? 'Cerita' : p.name, c:p.css }))
+  .concat([{ id:'semua', name:'Undangan', c:'#b23a53' }, { id:'musik', name:'Musik', c:'#3a3f63' }]);
+function buildPhone(){
+  $('#phNames').textContent = COUPLE;
+  $('#phGrid').innerHTML = APPS.map(a => `<button class="app" type="button" data-app="${a.id}" style="--c:${a.c}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${APP_ICONS[a.id]}</svg></span><span class="nm">${esc(a.name)}</span></button>`).join('');
+  document.querySelectorAll('#phGrid .app').forEach(b => b.onclick = () => launchApp(b.dataset.app, b));
+  $('#phHome').onclick = () => closePhone();
+  $('#phoneWrap').addEventListener('click', e => { if (e.target.id === 'phoneWrap') closePhone(); });
+  $('#btnPhone').addEventListener('click', () => { if (!busy()) openPhone(); });
+}
+function refreshPhone(){
+  const d = new Date();
+  $('#phTime').textContent = String(d.getHours()).padStart(2,'0') + '.' + String(d.getMinutes()).padStart(2,'0');
+  $('#phDate').textContent = W.dateShort + ' · ' + cdText();
+  document.querySelectorAll('#phGrid .app').forEach(b => {
+    const id = b.dataset.app, ic = b.querySelector('.ic'), unread = PILLARS.some(p => p.id === id) && !visited.includes(id);
+    let dot = ic.querySelector('.dot');
+    if (unread && !dot){ dot = document.createElement('i'); dot.className = 'dot'; ic.appendChild(dot); }
+    if (!unread && dot) dot.remove();
+    if (id === 'musik') b.querySelector('.nm').textContent = musicOn ? 'Musik on' : 'Musik off';
+  });
+}
+function phoneDelta(){
+  const btn = $('#btnPhone').getBoundingClientRect(), ph = $('#phone').getBoundingClientRect();
+  return [ (btn.left + btn.width/2) - (ph.left + ph.width/2), (btn.top + btn.height/2) - (ph.top + ph.height/2) ];
+}
+function openPhone(){
+  if (phoneOpen || !phoneMode) return;
+  phoneOpen = true; refreshPhone();
+  $('#phoneWrap').hidden = false; refreshBusy();
+  const [dx, dy] = phoneDelta();
+  anim($('#phoneWrap'), [{ opacity:0 }, { opacity:1 }], { duration:260, easing:'ease-out' });
+  anim($('#phone'), [
+    { transform:`translate(${dx}px, ${dy}px) scale(.16) rotate(-14deg)`, opacity:.3 },
+    { transform:'translate(0, 0) scale(1.03) rotate(1deg)', opacity:1, offset:.72 },
+    { transform:'none', opacity:1 }
+  ], { duration:500, easing:'cubic-bezier(.2,.8,.3,1)' });
+  document.querySelectorAll('#phGrid .app').forEach((a, i) => anim(a, [{ transform:'translateY(14px) scale(.6)', opacity:0 }, { transform:'none', opacity:1 }], { duration:320, delay:200 + i*40, easing:'cubic-bezier(.2,.8,.3,1)', fill:'backwards' }));
+  setTimeout(() => { const f = document.querySelector('#phGrid .app'); if (f) f.focus({ preventScroll:true }); }, 60);
+}
+function closePhone(then, quick){
+  if (!phoneOpen) return;
+  const finish = () => { $('#phoneWrap').hidden = true; phoneOpen = false; refreshBusy(); if (then) then(); };
+  let a;
+  if (quick){
+    anim($('#phoneWrap'), [{ opacity:1 }, { opacity:0 }], { duration:180, easing:'ease-in' });
+    a = anim($('#phone'), [{ transform:'none', opacity:1 }, { transform:'scale(.9)', opacity:0 }], { duration:180, easing:'ease-in' });
+  } else {
+    const [dx, dy] = phoneDelta();
+    anim($('#phoneWrap'), [{ opacity:1 }, { opacity:0 }], { duration:280, easing:'ease-in' });
+    a = anim($('#phone'), [{ transform:'none', opacity:1 }, { transform:`translate(${dx}px, ${dy}px) scale(.16) rotate(-10deg)`, opacity:0 }], { duration:300, easing:'cubic-bezier(.5,0,.75,0)' });
+  }
+  if (a) a.onfinish = finish; else finish();
+}
+function launchApp(id, el){
+  const ic = el.querySelector('.ic');
+  anim(ic, [{ transform:'scale(1)' }, { transform:'scale(.84)' }, { transform:'scale(1)' }], { duration:200 });
+  if (id === 'musik'){ setMusic(!musicOn); refreshPhone(); return; }
+  const r = ic.getBoundingClientRect(), origin = { x:r.left + r.width/2, y:r.top + r.height/2 };
+  closePhone(() => openSheet(id === 'semua' ? 'all' : id, { origin, fromPhone:true }), true);
+}
+function setPhoneMode(on, announce){
+  phoneMode = on;
+  $('#btnA').hidden = on; $('#btnPhone').hidden = !on;
+  updateBadge(); lastNearKey = '#';
+  if (on && announce){
+    anim($('#btnPhone'), [{ transform:'scale(0) rotate(-30deg)' }, { transform:'scale(1.18) rotate(8deg)', offset:.7 }, { transform:'scale(1) rotate(0)' }], { duration:560, easing:'cubic-bezier(.2,.8,.3,1)' });
+    toast('Undangan lengkap sekarang ada di HP-mu, tombol kanan bawah.', 3800);
+  }
+}
+function updateBadge(){
+  const b = $('#phBadge'); if (!b) return;
+  const n = PILLARS.length - visited.filter(v => PILLARS.some(p => p.id === v)).length;
+  b.hidden = n <= 0; b.textContent = n;
 }
 function bindRsvp(){
   $('#rsvpForm').addEventListener('submit', async e => {
@@ -1630,7 +1721,8 @@ function openLb(i){ lbI = (i + W.gallery.length) % W.gallery.length; paintScene(
 /* ---------- progress HUD ---------- */
 function updateProgress(){
   $('#dots').innerHTML = PILLARS.map(p => `<i style="--c:${p.css}" class="${visited.includes(p.id) ? 'on' : ''}"></i>`).join('');
-  $('#progTxt').textContent = visited.length + '/' + PILLARS.length;
+  $('#progTxt').textContent = visited.filter(v => PILLARS.some(p => p.id === v)).length + '/' + PILLARS.length;
+  updateBadge();
 }
 
 /* ---------- music box (original melody, WebAudio) ---------- */
@@ -1676,14 +1768,17 @@ function bindUI(){
     const first = !store.get('greeted', false); store.set('greeted', true);
     if (first) setTimeout(() => say(COUPLE, [
       'Halo, ' + guest + '! Selamat datang di resepsi pernikahan kami.',
-      'Silakan masuk lewat pintu lobby. Info acara ada di foyer tepat setelah pintu, dan kami menunggu di pelaminan.',
-      'Geser joystick di kiri bawah untuk jalan, lalu tap objek info atau tekan A di dekatnya.'
+      'Silakan masuk lewat pintu lobby. Begitu di dalam ballroom, undangan lengkapnya langsung terbuka.',
+      'Geser joystick di kiri bawah untuk jalan, atau tap lantai.'
     ]), 600);
     else toast('Selamat datang lagi, ' + guest + '!');
   });
   $('#btnMusic').addEventListener('click', () => setMusic(!musicOn));
   $('#dialog').addEventListener('click', advance);
   $('#btnA').addEventListener('click', () => { if (nearest && !busy()) nearest.run(); });
+  $('#actLabel').addEventListener('click', () => { if (nearest && !busy()) nearest.run(); });
+  buildPhone();
+  welcomeDone = !!store.get('welcomeDone', false); setPhoneMode(welcomeDone, false);
   $('#sheetClose').addEventListener('click', closeSheet);
   $('#sheetWrap').addEventListener('click', e => { if (e.target.id === 'sheetWrap') closeSheet(); });
   $('#lbClose').addEventListener('click', () => { $('#lb').hidden = true; refreshBusy(); });
@@ -1695,7 +1790,8 @@ function bindUI(){
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
     const k = e.key.toLowerCase(); keys[k] = true;
-    if (k === 'escape'){ if (!$('#lb').hidden){ $('#lb').hidden = true; refreshBusy(); } else if (sheetOpen()) closeSheet(); return; }
+    if (k === 'escape'){ if (!$('#lb').hidden){ $('#lb').hidden = true; refreshBusy(); } else if (sheetOpen()) closeSheet(); else if (phoneOpen) closePhone(); return; }
+    if (k === 'p' && started && phoneMode){ if (phoneOpen) closePhone(); else if (!busy()) openPhone(); return; }
     if (k === ' ' || k === 'enter' || k === 'e'){
       if (!started) return;
       if (dlg.open){ e.preventDefault(); advance(); }
@@ -1817,11 +1913,18 @@ function update(dt){
   animChibi(player, moving, dt, T);
 
   // dog follows
-  const dp = dog.g.position, bx = pp.x - Math.sin(player.face)*1.5 + Math.cos(player.face)*.7, bz = pp.z - Math.cos(player.face)*1.5 - Math.sin(player.face)*.7;
+  // Kopi tidak boleh masuk ballroom: saat tamu di dalam, ia menunggu di dekat pintu lobby
+  const dogWait = inside || pp.z < BLD.z1 + 1.2;
+  const dp = dog.g.position;
+  const bx = dogWait ? -1.9 : pp.x - Math.sin(player.face)*1.5 + Math.cos(player.face)*.7;
+  const bz = dogWait ? BLD.z1 + 2.7 : pp.z - Math.cos(player.face)*1.5 - Math.sin(player.face)*.7;
   const ddx = bx - dp.x, ddz = bz - dp.z, dd = Math.hypot(ddx, ddz), dMoving = dd > .5;
   if (dMoving){ const s = Math.min(6.2, dd*2.6); dp.x += ddx/dd*s*dt; dp.z += ddz/dd*s*dt; dog.face = lerpAng(dog.face, Math.atan2(ddx, ddz), Math.min(1, dt*8)); }
   else if (Math.hypot(pp.x - dp.x, pp.z - dp.z) > .1) dog.face = lerpAng(dog.face, Math.atan2(pp.x - dp.x, pp.z - dp.z), Math.min(1, dt*4));
+  if (dogWait && !dMoving) dog.face = lerpAng(dog.face, Math.atan2(0 - dp.x, BLD.z1 - dp.z), Math.min(1, dt*3));
   collide(dp, .35); dog.g.rotation.y = dog.face;
+  if (dp.z < BLD.z1 + .9 && Math.abs(dp.x) < BLD.door + .7) dp.z = BLD.z1 + .9;
+  dog.body.rotation.x += ((dogWait && !dMoving ? -.38 : 0) - dog.body.rotation.x) * Math.min(1, dt*6);
   dog.phase += dt * (dMoving ? 14 : 0);
   dog.legs.forEach((l,i) => l.rotation.x = dMoving ? Math.sin(dog.phase + (i%2 ? 0 : Math.PI) + (i>1 ? Math.PI : 0)) * .6 : 0);
   dog.tail.rotation.y = Math.sin(T * (dog.hop > 0 ? 26 : 10)) * .6;
@@ -1838,10 +1941,6 @@ function update(dt){
   couple.ring.material.opacity = .35 + Math.sin(T*3)*.15;
 
   animateSeats(dt);
-  // pillars
-  PILLARS.forEach((p, i) => {
-    p.ring.material.opacity = (visited.includes(p.id) ? .45 : .4 + Math.sin(T*3 + i)*.2);
-  });
 
   // petals
   const pa = petals.geometry.attributes.position, sp = petals.userData.sp;
@@ -1866,7 +1965,10 @@ function update(dt){
   const ins = inX && (inside ? pp.z < BLD.z1 + .4 : pp.z < BLD.z1 - .5);
   if (ins !== inside){
     inside = ins;
-    if (ins && !store.get('entered', false)){ store.set('entered', true); toast('Selamat datang! Info undangan ada di kiri-kanan pintu masuk. Tap untuk membuka.', 4000); }
+  }
+  if (inside && started && !welcomeDone && !welcomeQueued && !busy()){
+    welcomeQueued = true;
+    setTimeout(() => { welcomeQueued = false; if (inside && !welcomeDone && !busy()) openSheet('all', { welcome:true }); }, 900);
   }
   const fadeTarget = inside ? 0 : 1;
   if (extFade !== fadeTarget){ extFade = clamp(extFade + Math.sign(fadeTarget - extFade) * dt / .85, 0, 1); applyExtFade(extFade); }
@@ -1908,11 +2010,9 @@ function update(dt){
   }
 
   // compass arrow to nearest unvisited pillar
-  let tgt = null, td = 1e9;
-  PILLARS.forEach(p => { if (visited.includes(p.id)) return; const d = Math.hypot(p.ix - pp.x, p.iz - pp.z); if (d < td){ td = d; tgt = p; } });
-  if (tgt && td > 4.2 && started && !busy()){
-    const gx = inside ? tgt.ix : 0, gz = inside ? tgt.iz : BLD.z1 + .5;
-    const dx = gx - pp.x, dz = gz - pp.z, d = Math.hypot(dx, dz) || 1;
+  const toDoor = Math.hypot(pp.x, pp.z - BLD.z1);
+  if (!inside && !welcomeDone && toDoor > 3 && started && !busy()){
+    const dx = 0 - pp.x, dz = BLD.z1 + .5 - pp.z, d = Math.hypot(dx, dz) || 1;
     arrow.visible = true; arrow.position.set(pp.x + dx/d*1.2, .08, pp.z + dz/d*1.2); arrow.rotation.y = Math.atan2(-dx, -dz);
     arrow.material.opacity = .65 + Math.sin(T*5)*.25;
   } else arrow.visible = false;
@@ -1969,7 +2069,7 @@ function boot(){
   sun.shadow.mapSize.set(1024, 1024); const sc = sun.shadow.camera; sc.left = -30; sc.right = 30; sc.top = 30; sc.bottom = -30; sc.near = 1; sc.far = 100;
   sun.shadow.bias = -.0008; sun.shadow.normalBias = .03; scene.add(sun);
 
-  buildGround(); buildBoundary(); buildBuilding(); buildForecourt(); buildDoorman(); buildPillars(); buildInterior(); buildGuests();
+  buildGround(); buildBoundary(); buildBuilding(); buildForecourt(); buildDoorman(); buildInterior(); buildGuests();
   buildTrees(); scatter(); flushSB(); applyExtFade(1);
   buildAnimals(); buildPlayer();
   [['couple', 0, -18.5, 1.6, 3.6, 0], ['sign', 3.9, 23.3, 1.1, 2.6, 0], ['tv', 11, -21.3, 3.8, 4.4, 1.75], ['doorman', 4.7, BLD.z1 + 1.5, .6, 2.2, 0]].forEach(([k, x, z, w, h, y0]) => {

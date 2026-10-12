@@ -2,33 +2,22 @@
 
 Undangan pernikahan berbentuk game 3D low poly ala Harvest Moon, berlatar hotel mewah. Tamu mulai di forecourt hotel (blok kamar dengan jendela menyala, nama hotel di mahkota atap, kanopi lobby, kolam refleksi, palem, doorman), lalu masuk lewat pintu kaca geser otomatis. Saat masuk, fasad dan atap memudar sambil naik sehingga seluruh Grand Ballroom kelihatan: karpet navy damask, pelaminan dinding bunga, meja bundar tamu, chandelier, dan **TV LED** di dinding belakang kanan yang menampilkan ucapan tamu secara bergulir (tap TV untuk membuka semua ucapan).
 
-Info undangan dikumpulkan di foyer, kiri-kanan red carpet tepat setelah pintu masuk, sebagai objek nyata resepsi:
-
-| Info | Objek |
-|---|---|
-| RSVP | meja buku tamu + kotak angpao |
-| Acara | roll-up banner jadwal |
-| Lokasi | papan peta di easel |
-| Galeri | photo wall |
-| Cerita Kami | buku kenangan di podium |
-| Ucapan | papan kartu ucapan (dan TV LED) |
-
-Semuanya kelihatan sekaligus begitu masuk. Saat di dalam, tap objeknya untuk langsung membuka info tanpa perlu jalan.
+Begitu pertama kali masuk Grand Ballroom, popup **Undangan** terbuka otomatis: satu popup yang bisa di-scroll dengan segmen berurutan **Acara → Cerita Kami → Lokasi → Galeri → RSVP → Ucapan** (navigasi segmen menempel di atas, segmen yang sudah terlihat ditandai ✓). Setelah popup ditutup, tombol kanan bawah berubah menjadi **HP**. HP berisi app untuk tiap segmen, app "Undangan" (popup lengkap), dan "Musik". Membuka HP dan app memakai animasi; menutup app kembali ke layar HP. Kopi (anjing) tidak ikut masuk ballroom, ia menunggu di depan pintu lobby.
 
 Satu file statis (`index.html`, Three.js r128 dari CDN) plus satu Vercel function (`api/rsvp.js`). Tanpa build step. Mobile-first.
 
 ## Kontrol
-- HP: joystick kiri bawah, tombol **A** kanan bawah, tap lantai untuk jalan otomatis, tap objek info di foyer untuk langsung membukanya, pinch untuk zoom.
-- Laptop: WASD / panah, Space / Enter / E untuk aksi, scroll untuk zoom.
+- HP: joystick kiri bawah, tombol **A** kanan bawah (berubah jadi tombol HP setelah popup undangan dibaca), tap lantai untuk jalan otomatis, pinch untuk zoom.
+- Laptop: WASD / panah, Space / Enter / E untuk aksi, P untuk buka/tutup HP, Esc untuk menutup, scroll untuk zoom.
 
 ## Ganti data undangan
 Edit objek `W` di bagian atas `<script>` dalam `index.html` (nama, orang tua, tanggal, jam acara, venue, nomor WhatsApp RSVP, cerita, caption galeri). Nama venue otomatis tampil di papan nama gedung, nama mempelai di papan selamat datang dan monogram pelaminan.
 
 ## RSVP, kursi tamu, dan Ucapan
-- Tamu mengisi RSVP di meja buku tamu (**RSVP**). Datanya disimpan di Upstash Redis lewat `api/rsvp.js`.
+- Tamu mengisi RSVP di segmen **RSVP** (popup undangan atau app RSVP di HP). Datanya disimpan di Upstash Redis lewat `api/rsvp.js`.
 - Setiap RSVP "Hadir" muncul sebagai tamu yang duduk di meja bundar ballroom (10 meja x 5 kursi = 50 kursi, yang paling dekat pelaminan diisi duluan). Kalau lebih dari 50, yang tampil 50 RSVP "Hadir" terbaru. Tap tamu yang duduk untuk lihat namanya.
 - Daftar lengkap tamu yang sudah konfirmasi ada di bawah form RSVP (bisa "Muat lebih banyak").
-- Papan **Ucapan** dan TV LED menampilkan semua ucapan untuk semua tamu.
+- Segmen **Ucapan** dan TV LED di ballroom menampilkan semua ucapan untuk semua tamu.
 - Satu perangkat = satu RSVP. Kirim ulang dari perangkat yang sama akan memperbarui, bukan menambah.
 - Batas 8 kiriman per IP per 10 menit untuk mencegah spam.
 
