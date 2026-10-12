@@ -1,0 +1,62 @@
+# Deploy ke Vercel lewat GitHub Actions.
+#
+# Kenapa nggak pakai auto-deploy bawaan Vercel?
+# Di plan Hobby, repo private cuma boleh di-deploy dari commit milik
+# pemilik akun Vercel. Commit dari kolaborator lain jadi "Deployment Blocked".
+# Workflow ini deploy pakai token milik pemilik akun, jadi siapa pun yang
+# push ke main tetap ke-deploy. Auto-deploy Git dimatikan di vercel.json.
+#
+# Setup sekali: tambah secret VERCEL_TOKEN di
+# Settings -> Secrets and variables -> Actions.
+
+name: Deploy ke Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      # ID ini bukan rahasia, cuma penunjuk akun & project Vercel.
+      VERCEL_ORG_ID: team_i4MtLnAkKoIdyslWpP9DXsQa
+      VERCEL_PROJECT_ID: prj_XXqdv4z6MJK0rv6oL48gtLJjUpPr
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Cek token
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Secret VERCEL_TOKEN belum diisi. Tambahkan di Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      # Deploy dari folder bersih tanpa .git, supaya Vercel tidak membaca
+      # metadata commit (author) dan deploy tercatat atas nama pemilik token.
+      - name: Siapkan folder deploy
+        run: |
+          mkdir -p "$RUNNER_TEMP/site"
+          rsync -a --exclude '.git' --exclude '.github' --exclude 'README.md' ./ "$RUNNER_TEMP/site/"
+          ls -la "$RUNNER_TEMP/site"
+
+      - name: Deploy production
+        working-directory: ${{ runner.temp }}/site
+        run: |
+          url=$(vercel deploy --prod --yes --token="$VERCEL_TOKEN")
+          echo "Deployed: $url"
+          echo "### Deploy selesai" >> "$GITHUB_STEP_SUMMARY"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"

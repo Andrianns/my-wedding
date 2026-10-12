@@ -15,4 +15,10 @@ Edit objek `W` di bagian atas `<script>` dalam `index.html` (nama, orang tua, ta
 Tambahkan `#Nama_Tamu` di akhir URL, misalnya `https://<domain>/#Budi_Santoso`. Cover akan menampilkan "Kepada Yth. Budi Santoso".
 
 ## Deploy
-Repo ini terhubung ke Vercel. Setiap push ke `main` otomatis di-deploy. Tidak perlu build command; Vercel menyajikan `index.html` apa adanya.
+Deploy jalan lewat GitHub Actions (`.github/workflows/deploy.yml`), bukan auto-deploy bawaan Vercel. Alasannya: di plan Hobby, repo private hanya bisa di-deploy dari commit milik pemilik akun Vercel, jadi commit kolaborator lain akan "Deployment Blocked".
+
+- Setiap push ke `main` menjalankan workflow yang deploy ke production memakai token pemilik akun Vercel.
+- Auto-deploy Git di Vercel dimatikan lewat `vercel.json` (`git.deploymentEnabled: false`).
+- Deploy manual: tab **Actions** → **Deploy ke Vercel** → **Run workflow**.
+
+Setup sekali: buat token di Vercel (Account Settings → Tokens), lalu simpan sebagai secret `VERCEL_TOKEN` di repo ini (Settings → Secrets and variables → Actions).
