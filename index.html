@@ -161,8 +161,8 @@ legend{font-family:var(--f-pixel);font-size:12px;letter-spacing:.06em;color:var(
 <div id="hud" class="hud busy">
   <header class="tl frame">
     <span class="eyebrow">Undangan Pernikahan</span>
-    <strong id="hudNames">Raka &amp; Nadia</strong>
-    <span class="sub" id="hudDate">12 Des 2026</span>
+    <strong id="hudNames">Aji &amp; Vania</strong>
+    <span class="sub" id="hudDate">10 Jul 2027</span>
     <span class="demo">DATA CONTOH</span>
   </header>
   <div class="tr">
@@ -210,8 +210,8 @@ legend{font-family:var(--f-pixel);font-size:12px;letter-spacing:.06em;color:var(
 <div id="cover" class="cover">
   <div class="cover-card frame">
     <span class="eyebrow">Undangan Pernikahan</span>
-    <h1><span id="cvG">Raka</span><span class="amp">&amp;</span><span id="cvB">Nadia</span></h1>
-    <p class="cv-date" id="cvDate">Sabtu, 12 Desember 2026</p>
+    <h1><span id="cvG">Aji</span><span class="amp">&amp;</span><span id="cvB">Vania</span></h1>
+    <p class="cv-date" id="cvDate">Sabtu, 10 Juli 2027</p>
     <div class="cv-guest"><span>Kepada Yth.</span><strong id="cvGuest">Tamu Undangan</strong></div>
     <button id="btnOpen" class="btn big">Buka Undangan</button>
     <p class="cv-hint">Jalan-jalan di kebun kami untuk lihat info acara</p>
@@ -228,26 +228,26 @@ legend{font-family:var(--f-pixel);font-size:12px;letter-spacing:.06em;color:var(
    DATA UNDANGAN — ganti bagian ini dengan data asli kalian
    ========================================================= */
 const W = {
-  groom:{ nick:'Raka',  full:'Raka Aditya Pratama', parents:'Putra dari Bapak Hendra & Ibu Sri' },
-  bride:{ nick:'Nadia', full:'Nadia Kirana Putri',  parents:'Putri dari Bapak Agus & Ibu Rina' },
-  dateISO:'2026-12-12',
-  dateLabel:'Sabtu, 12 Desember 2026',
-  dateShort:'Sabtu, 12 Des 2026',
+  groom:{ nick:'Aji',  full:'Aji', parents:'Putra dari Bapak Hendra & Ibu Sri' },
+  bride:{ nick:'Vania', full:'Vania',  parents:'Putri dari Bapak Agus & Ibu Rina' },
+  dateISO:'2027-07-10',
+  dateLabel:'Sabtu, 10 Juli 2027',
+  dateShort:'Sabtu, 10 Jul 2027',
   events:[
-    { name:'Akad Nikah', time:'08.00 – 10.00 WIB', start:'2026-12-12T08:00:00+07:00', end:'2026-12-12T10:00:00+07:00',
+    { name:'Akad Nikah', time:'08.00 – 10.00 WIB', start:'2027-07-10T08:00:00+07:00', end:'2027-07-10T10:00:00+07:00',
       place:'Masjid Al-Ikhlas, Kebayoran Baru, Jakarta Selatan', note:'Terbatas untuk keluarga dan kerabat dekat.' },
-    { name:'Resepsi', time:'11.00 – 14.00 WIB', start:'2026-12-12T11:00:00+07:00', end:'2026-12-12T14:00:00+07:00',
+    { name:'Resepsi', time:'11.00 – 14.00 WIB', start:'2027-07-10T11:00:00+07:00', end:'2027-07-10T14:00:00+07:00',
       place:'Gedung Serbaguna Melati, Jakarta Selatan', note:'' }
   ],
   venue:{ name:'Gedung Serbaguna Melati', address:'Jl. Melati Raya No. 12, Kebayoran Baru, Jakarta Selatan', parking:'Parkir tersedia di basement gedung.' },
   dresscode:'Nuansa pastel atau earth tone.',
-  hashtag:'#RakaNadiaTumbuhBersama',
+  hashtag:'#AjiVaniaTumbuhBersama',
   wa:'6281234567890',
   story:[
     { yr:'2019', title:'Satu kelompok KKN', text:'Ketemu pertama kali di desa tempat KKN. Satu ngurus kebun, satu ngurus dokumentasi.' },
     { yr:'2021', title:'Mulai serius', text:'Dari teman diskusi tugas jadi teman pulang bareng setiap hari.' },
     { yr:'2025', title:'Lamaran', text:'Dengan restu dua keluarga, kami memutuskan untuk melangkah bersama.' },
-    { yr:'2026', title:'Hari yang ditunggu', text:'Sekarang kami ingin merayakannya bersama kamu.' }
+    { yr:'2027', title:'Hari yang ditunggu', text:'Sekarang kami ingin merayakannya bersama kamu.' }
   ],
   gallery:[ 'Senja pertama', 'Pendakian bareng', 'Kota malam hari', 'Musim hujan', 'Kebun teh', 'Hari lamaran' ]
 };
@@ -257,7 +257,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-const R = mulberry32(20261212);
+const R = mulberry32(20270710);
 const COUPLE = W.groom.nick + ' & ' + W.bride.nick;
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('kebunrestu.'+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
