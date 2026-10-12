@@ -11,6 +11,18 @@ Satu file statis (`index.html`), Three.js r128 dari CDN, tanpa build step. Mobil
 ## Ganti data undangan
 Edit objek `W` di bagian atas `<script>` dalam `index.html` (nama, orang tua, tanggal, jam acara, venue, nomor WhatsApp RSVP, cerita, caption galeri). Semua data saat ini masih **contoh**.
 
+## RSVP, kursi tamu, dan pilar Ucapan
+- Tamu mengisi RSVP di pilar **RSVP**. Datanya disimpan di Upstash Redis lewat `api/rsvp.js`.
+- Setiap RSVP "Hadir" muncul sebagai tamu yang duduk di kursi depan pelaminan (50 kursi). Kalau lebih dari 50, yang tampil 50 RSVP "Hadir" terbaru. Tap tamu yang duduk untuk lihat namanya.
+- Daftar lengkap tamu yang sudah konfirmasi ada di bawah form RSVP (bisa "Muat lebih banyak").
+- Pilar **Ucapan** menampilkan semua ucapan untuk semua tamu.
+- Satu perangkat = satu RSVP. Kirim ulang dari perangkat yang sama akan memperbarui, bukan menambah.
+- Batas 8 kiriman per IP per 10 menit untuk mencegah spam.
+
+Setup sekali: di Vercel buka project → **Storage** → sambungkan database **Upstash Redis** (yang sudah ada atau buat baru) ke environment Production, lalu jalankan ulang workflow deploy. API membaca `KV_REST_API_URL`/`KV_REST_API_TOKEN` atau `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`. Semua key diberi awalan `wedding-three:` (bisa diganti lewat env `RSVP_PREFIX`), jadi aman berbagi database dengan project lain.
+
+Selama database belum tersambung, game tetap jalan: kursi kosong dan RSVP otomatis jatuh ke kirim lewat WhatsApp.
+
 ## Nama tamu di link
 Tambahkan `#Nama_Tamu` di akhir URL, misalnya `https://<domain>/#Budi_Santoso`. Cover akan menampilkan "Kepada Yth. Budi Santoso".
 
