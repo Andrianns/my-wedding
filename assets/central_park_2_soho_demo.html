@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Central Park 2 + SOHO Podomoro City • Three.js</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#0c1623;color:white;font-family:system-ui,-apple-system,Segoe UI,sans-serif;overflow:hidden}
+    #canvas{width:100vw;height:100vh;display:block;touch-action:none}
+    .hud{position:absolute;top:20px;left:20px;background:#152136dd;backdrop-filter:blur(15px);padding:17px 20px;border:1px solid #ffffff25;border-radius:16px;max-width:345px;pointer-events:none}
+    h1{font-size:18px;line-height:1.2;margin:0 0 8px}p{font-size:12px;line-height:1.6;margin:0;color:#c7d7e5}.tag{color:#8fefcf;letter-spacing:.13em;text-transform:uppercase;font-size:10px;font-weight:bold;margin-bottom:9px}
+    .controls{position:absolute;right:20px;bottom:19px;display:flex;gap:8px;align-items:end;flex-direction:column}
+    button{background:#edf4f6;color:#162635;border:0;border-radius:12px;padding:11px 14px;font-weight:700;cursor:pointer;box-shadow:0 5px 20px #10192755}
+    .status{position:absolute;left:20px;bottom:22px;border:1px solid #ffffff33;background:#152136c9;padding:11px 14px;border-radius:10px;font-size:12px}
+    #loading{position:absolute;inset:0;display:grid;place-items:center;background:#101923;font-size:17px;z-index:5;text-align:center;padding:25px}
+    @media(max-width:600px){.hud{max-width:calc(100vw - 40px)}.status{bottom:15px;left:12px;max-width:70%;}.controls{bottom:15px;right:12px}}
+  </style>
+  <script type="importmap">
+    {"imports":{"three":"https://unpkg.com/three@0.170.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.170.0/examples/jsm/"}}
+  </script>
+</head>
+<body>
+  <div id="loading">Memuat model Central Park 2 + SOHO…</div>
+  <div class="hud"><div class="tag">Wedding world • Jakarta Barat</div><h1>Central Park 2 + SOHO Podomoro City</h1><p>Model lingkungan 3D interpretatif dari foto referensi. Tekan <b>Ke SOHO</b> untuk berpindah ke pintu SOHO di samping mall. <b>WASD</b> = jalan, drag = orbit, scroll = zoom.<br/>Ikuti checkpoint biru untuk menuju entrance.</p></div>
+  <div id="status" class="status">Spawn point • Depan Central Park 2</div>
+  <div class="controls"><button id="toMall">Ke Mall</button><button id="toSoho">Ke SOHO</button><button id="toggleCam">Camera: orbit</button><button id="reset">↺ Reset spawn</button></div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const scene=new THREE.Scene();scene.background=new THREE.Color('#b4c8dc');scene.fog=new THREE.Fog('#b4c8dc',225,590);
+    const camera=new THREE.PerspectiveCamera(57,innerWidth/innerHeight,0.1,1100);
+    const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure=1.45;
+    renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.domElement.id='canvas';document.body.prepend(renderer.domElement);
+    scene.add(new THREE.HemisphereLight('#e8f3ff','#b5a99b',2.25));
+    const sun=new THREE.DirectionalLight('#fff9ee',3.25);sun.position.set(-67,140,102);
+    sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+    sun.shadow.camera.left=-130;sun.shadow.camera.right=130;sun.shadow.camera.top=130;sun.shadow.camera.bottom=-130;
+    sun.shadow.normalBias=.01;scene.add(sun);
+    camera.position.set(157,92,166);
+    const controls=new OrbitControls(camera,renderer.domElement);
+    controls.enableDamping=true;controls.target.set(53,28,19);controls.minDistance=4;controls.maxDistance=440;
+    controls.maxPolarAngle=Math.PI*.48;
+
+    new GLTFLoader().load('central_park_2_soho_full.glb',gltf=>{
+      const building=gltf.scene;
+      building.traverse(o=>{
+        if(o.isMesh){o.castShadow=true;o.receiveShadow=true}
+        if(o.name.includes('SpawnMarker_HIDE_AFTER_SETUP'))o.visible=false;
+      });
+      scene.add(building);
+      document.getElementById('loading').remove();
+    },undefined,e=>{
+      document.getElementById('loading').textContent='Gagal memuat file GLB. Jalankan lewat local HTTP server (bukan file://), dan pastikan GLB satu folder dengan HTML. Detail: '+e.message;
+    });
+
+    // Demo character: replace this group with your avatar / animated GLB.
+    const player=new THREE.Group();scene.add(player);
+    const coat=new THREE.MeshStandardMaterial({color:'#f2c98c',roughness:.75});
+    const skin=new THREE.MeshStandardMaterial({color:'#f5c29c',roughness:.8});
+    const clothes=new THREE.MeshStandardMaterial({color:'#f5f0e7',roughness:.82});
+    const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.42,.90,7,10),clothes);torso.position.y=1.03;player.add(torso);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.32,16,12),skin);head.position.y=2.02;player.add(head);
+    const hair=new THREE.Mesh(new THREE.SphereGeometry(.326,16,10,0,Math.PI*2,0,Math.PI*.46),coat);hair.position.y=2.10;player.add(hair);
+    player.position.set(0,0,68);
+
+    let checkpoints=[];let passed=0;let cameraFollow=false;let currentRoute='mall';
+    const active=new THREE.MeshStandardMaterial({color:'#59d8ff',emissive:'#157fc1',emissiveIntensity:1.0,metalness:.15,roughness:.27});
+    const finished=new THREE.MeshStandardMaterial({color:'#9fe6a1',emissive:'#1c6e41',emissiveIntensity:.6});
+    const routes={
+      mall:{spawn:[0,0,68],camera:[101,59,145],target:[0,19,19],label:'Central Park 2',checkpoints:[
+        [0,51,'Zebra crossing'],[-7,40,'Area drop-off mall'],[-7,35.9,'Pintu mall Central Park 2']]},
+      soho:{spawn:[107,0,71],camera:[143,30,111],target:[102,10,33],label:'SOHO Podomoro City',checkpoints:[
+        [107,59,'Area plaza SOHO'],[107,49.5,'Bawah kanopi kaca'],[101,38,'Halaman depan entrance'],[101,33.8,'Pintu masuk SOHO']]}
+    };
+    function activateRoute(kind){
+      currentRoute=kind;passed=0;cameraFollow=false;
+      checkpoints.forEach(c=>scene.remove(c.mesh));checkpoints=[];
+      const r=routes[kind];player.position.fromArray(r.spawn);
+      camera.position.fromArray(r.camera);controls.target.fromArray(r.target);
+      for(let i=0;i<r.checkpoints.length;i++){
+        const [x,z,label]=r.checkpoints[i];const p=new THREE.Vector3(x,.14,z);
+        const tor=new THREE.Mesh(new THREE.TorusGeometry(1.35,.13,10,56),active);
+        tor.rotation.x=-Math.PI/2;tor.position.copy(p);scene.add(tor);
+        checkpoints.push({p,label,mesh:tor});
+      }
+      document.getElementById('toggleCam').textContent='Camera: orbit';
+      document.getElementById('status').textContent='Spawn point • '+r.label;
+      document.getElementById('toMall').style.opacity=kind==='mall'?'1':'.62';
+      document.getElementById('toSoho').style.opacity=kind==='soho'?'1':'.62';
+    }
+    activateRoute(new URLSearchParams(location.search).has('soho')?'soho':'mall');
+    const keys=new Set();addEventListener('keydown',e=>{
+      if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){keys.add(e.code);e.preventDefault()}
+    });addEventListener('keyup',e=>keys.delete(e.code));
+    document.getElementById('toggleCam').onclick=()=>{
+      cameraFollow=!cameraFollow;document.getElementById('toggleCam').textContent='Camera: '+(cameraFollow?'follow':'orbit');
+    };
+    document.getElementById('toMall').onclick=()=>activateRoute('mall');
+    document.getElementById('toSoho').onclick=()=>activateRoute('soho');
+    document.getElementById('reset').onclick=()=>activateRoute(currentRoute);
+    let last=performance.now();
+    function update(now){
+      requestAnimationFrame(update);const dt=Math.min((now-last)/1000,.05);last=now;
+      let vx=0,vz=0;
+      if(keys.has('KeyW')||keys.has('ArrowUp'))vz-=1;
+      if(keys.has('KeyS')||keys.has('ArrowDown'))vz+=1;
+      if(keys.has('KeyA')||keys.has('ArrowLeft'))vx-=1;
+      if(keys.has('KeyD')||keys.has('ArrowRight'))vx+=1;
+      const v=new THREE.Vector3(vx,0,vz);
+      if(v.lengthSq()){
+        v.normalize().multiplyScalar(dt*8.2);
+        player.position.add(v);
+        player.position.x=THREE.MathUtils.clamp(player.position.x,-72,151);
+        player.position.z=THREE.MathUtils.clamp(player.position.z,32.8,80);
+        player.rotation.y=Math.atan2(-v.x,-v.z);
+      }
+      for(let i=0;i<checkpoints.length;i++){
+        const c=checkpoints[i];c.mesh.rotation.z=now*.00018+i*.5;
+        c.mesh.position.y=.13 + .09*Math.sin(now*.0016+i);
+      }
+      if(passed<checkpoints.length && player.position.distanceTo(new THREE.Vector3(checkpoints[passed].p.x,0,checkpoints[passed].p.z))<3.0){
+        checkpoints[passed].mesh.material=finished;
+        document.getElementById('status').textContent='Checkpoint '+(passed+1)+' • '+checkpoints[passed].label+' ✓';passed++;
+        if(passed===checkpoints.length)document.getElementById('status').textContent='🎉 Tiba di '+routes[currentRoute].label+'!';
+      }
+      if(cameraFollow){
+        const target=new THREE.Vector3(player.position.x+13,player.position.y+9,player.position.z+19);
+        camera.position.lerp(target,Math.min(1,dt*2.4));
+        controls.target.lerp(new THREE.Vector3(player.position.x,3,player.position.z-15),Math.min(1,dt*2.4));
+      }
+      controls.update();renderer.render(scene,camera);
+    }
+    requestAnimationFrame(update);
+    addEventListener('resize',()=>{
+      camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);
+    });
+  </script>
+</body>
+</html>
