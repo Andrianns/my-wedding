@@ -32,7 +32,7 @@ async function until(expression){
     if(await evaluate(expression))return;
     await new Promise(r=>setTimeout(r,150));
   }
-  throw new Error('Timed out: '+expression);
+  throw new Error('Timed out: '+expression+'; browser errors: '+JSON.stringify(errors));
 }
 async function capture(name){
   await evaluate('Journey.updateCamera(1);renderer.render(scene,camera)');
@@ -43,8 +43,10 @@ try{
   await send('Runtime.enable');await send('Network.enable');
   await send('Network.setCacheDisabled',{cacheDisabled:true});
   await send('Emulation.setDeviceMetricsOverride',{width:1280,height:800,deviceScaleFactor:1,mobile:false});
+  errors.length=0;
   await send('Page.navigate',{url});
   await until('typeof Journey!=="undefined" && Journey.ready');
+  await evaluate("store.set('viewHelpSeen',false);store.set('viewMode','tpp')");
   assert(await evaluate("getComputedStyle(document.querySelector('#hud .tl')).display==='none'"),'small invitation header hidden behind cover');
   await evaluate("(async()=>{document.querySelector('#btnOpen').click();await new Promise(r=>setTimeout(r,750));while(dlg.open){dlg.typing=false;advance();}welcomeDone=true;Journey.activate('mall',{x:0,z:68});window.testStep=n=>{for(let i=0;i<n;i++)update(.05)}})()");
   assert(await evaluate("getComputedStyle(document.querySelector('#hud .tl')).display!=='none'"),'small invitation header restored after cover');
@@ -66,6 +68,16 @@ try{
     const locked=Journey.locked&&old.distanceTo(player.g.position)<.001;
     Journey.ride();testStep(90);
     const upstairs=Journey.active==='ballroom'&&!Journey.locked;
+    const firstPerson=Journey.viewMode==='fpp'&&Journey.viewTutorial&&
+      !player.g.visible&&scene.getObjectByName('Foyer ceiling').visible&&
+      !document.querySelector('#btnView').hidden&&
+      getComputedStyle(document.querySelector('#btnView')).visibility==='visible'&&
+      getComputedStyle(document.querySelector('#viewTutorial')).display!=='none';
+    const beforeHelp=player.g.position.clone();keys.w=true;testStep(5);keys.w=false;
+    const helpStopsWalk=beforeHelp.distanceTo(player.g.position)<.001;
+    Journey.toggleView();
+    const switchedView=Journey.viewMode==='tpp'&&!Journey.viewTutorial&&
+      player.g.visible&&!scene.getObjectByName('Foyer ceiling').visible;
     Journey.go({x:28,z:-2});testStep(110);
     const reception=INTER.some(i=>i.key==='floor9-reception');
     const deskSolid=!Journey.lineClear({x:28,z:-2},{x:32,z:-2});
@@ -83,10 +95,13 @@ try{
     Journey.go({x:28,z:14.5});testStep(380);Journey.ride();testStep(110);
     const down=Journey.active==='lobby'&&!Journey.locked;
     Journey.go({x:0,z:8});testStep(220);Journey.go({x:0,z:10});testStep(80);
-    return {approach,entry,corridor,closed,cabin,actionWithPhone,locked,upstairs,reception,deskSolid,ballroom,altarRoute,threeTables,automaticDoor,straightOutdoor,leftOutdoor,outdoorStalls,down,outside:Journey.active==='mall'};
+    return {approach,entry,corridor,closed,cabin,actionWithPhone,locked,upstairs,firstPerson,helpStopsWalk,switchedView,reception,deskSolid,ballroom,altarRoute,threeTables,automaticDoor,straightOutdoor,leftOutdoor,outdoorStalls,down,outside:Journey.active==='mall'};
   })()`);
   for(const [key,value] of Object.entries(journey))assert.equal(value,true,key);
   console.log('PASS round trip, collision, lift lock, phone action',journey);
+  await evaluate("Journey.activate('ballroom',{x:28,z:6});Journey.setViewMode('fpp');Journey.update(.1)");
+  await capture('floor9-fpp-desktop');
+  await evaluate("Journey.setViewMode('tpp')");
   await evaluate("Journey.activate('lobby',{x:0,z:4});Journey.update(.1)");
   await capture('lobby-desktop');
   await evaluate("Journey.activate('ballroom',{x:28,z:6});Journey.update(.1)");
@@ -119,12 +134,14 @@ try{
     const glass=new THREE.Box3().setFromObject(pane);
     const halfGlass=glass.min.x===5&&glass.max.x===22&&!!scene.getObjectByName('Ballroom solid left wall');
     const buffet=INTER.some(i=>i.key==='buffet'&&i.x<5);
+    const sideBuffet=INTER.some(i=>i.key==='buffet-side')&&COLB.some(b=>Math.abs(b.x+11.02)<.01&&b.hd>4);
+    const newFloor=!!scene.getObjectByName('Ballroom grey diamond floor');
     const wall=new THREE.Box3().setFromObject(scene.getObjectByName('Bridal rear wall'));
     const rearWall=Math.abs(wall.min.x+12)<.01&&Math.abs(wall.max.x-22)<.01&&wall.max.y>=7;
     const shiftedTables=Math.abs(SEATPOS.reduce((sum,s)=>sum+s.x,0)/SEATPOS.length-18.3)<.01;
     walkTo=null;Journey.route=[];const z=player.g.position.z;keys.w=true;update(.05);keys.w=false;
     const controls=player.g.position.z>z;
-    return {smooth,front,coupleFront,halfGlass,buffet,rearWall,shiftedTables,controls};
+    return {smooth,front,coupleFront,halfGlass,buffet,sideBuffet,newFloor,rearWall,shiftedTables,controls};
   })()`);
   for(const [key,value] of Object.entries(altar))assert.equal(value,true,'altar '+key);
   console.log('PASS frontal altar, half glazing, buffet, smooth orbit and camera-relative controls',altar);

@@ -127,6 +127,8 @@
     };
     cuboid(0, -0.002, 2.5, 5, 0.1, 5, 0xb7ada0);
     cuboid(0, 0.035, 2.6, 3.5, 0.04, 3.2, 0x8e6961);
+    const cabinRoof=cuboid(0,3.36,2.5,5,.14,5,0xd2c8bd);
+    cabinRoof.name='Lift ceiling';cabinRoof.visible=false;
     // Low camera-side walls keep the character visible from the game's overhead view.
     if (config.side === "west") {
       b.wall(config.x - 2.5, config.z - 2.5, 5.25, 0.22, 3.1);
@@ -235,9 +237,23 @@
     const b = builder(ctx);
     const { T, block, label, plant, collider } = b;
     b.root.name = "SOHO reception and left-turn lift corridor";
-    // Lighting is owned by the zone: do not double the hemisphere/key lights.
-    b.floor(0, 2, 16, 16, COLORS.stone);
-    b.floor(-12, 0, 8, 5, COLORS.stone);
+    // The ground-level lobby sits on a continuous paved podium, not in open sky.
+    block(88,.32,72,0x6f6a68,-5,-.27,0).name='SOHO ground podium';
+    for(const x of [-32,26])for(const z of [-23,19]){
+      block(8,10,10,0x5b6166,x,4.7,z);
+      for(let row=0;row<3;row++)for(let col=0;col<3;col++)
+        block(.5,.65,.035,(row+col)%3?0xa7a29a:0xe9bd82,x-2+col*2,2+row*2.2,z+5.03);
+    }
+    const lobbyRoof=new T.Group();lobbyRoof.name='Lobby ceiling';lobbyRoof.visible=false;b.root.add(lobbyRoof);
+    const roofMat=new T.MeshStandardMaterial({color:0xd7c6b5,roughness:.85,side:T.DoubleSide});
+    const roofPanel=(w,d,x,y,z)=>{const mesh=new T.Mesh(new T.BoxGeometry(w,.16,d),roofMat);mesh.position.set(x,y,z);lobbyRoof.add(mesh);};
+    roofPanel(16.4,16.4,0,4.24,2);roofPanel(13.2,5.4,-14.3,3.74,0);
+    for(const [x,z] of [[0,5],[0,-2],[-11,0]]){
+      const lamp=new T.PointLight(0xffca91,.85,10);lamp.position.set(x,3.42,z);b.root.add(lamp);
+      lobbyRoof.add(block(.75,.035,.75,0xffe3b6,x,4.08,z));
+    }
+    b.floor(0, 2, 16, 16, 0x77736f);
+    b.floor(-12, 0, 8, 5, 0x77736f);
     // Marble joints and a runner make the left turn legible before reaching the desk.
     for (let x = -6; x <= 6; x += 2) block(0.012, 0.012, 15.8, 0xc0b9ae, x, 0.002, 2);
     for (let z = -4; z <= 8; z += 2) block(15.8, 0.012, 0.012, 0xc0b9ae, 0, 0.002, z);
@@ -322,8 +338,28 @@
 
   function createFoyer(ctx) {
     const b = builder(ctx);
-    const { block, label, plant } = b;
+    const { T, block, label, plant } = b;
     b.root.name = "Ninth-floor wedding foyer";
+    // A building body below floor nine and a low-detail skyline give TPP an exterior context.
+    block(46,18,36,0x7b7776,11,-9,3).name='Ninth-floor building body';
+    const skyline=[[47,-26,12,25],[61,-11,10,31],[50,12,14,23],[70,30,13,34],
+      [-27,-42,15,22],[1,-51,13,30],[31,-47,17,27]];
+    for(const [x,z,w,h] of skyline){
+      block(w,h,w*.73,0x53616b,x,-18+h/2,z);
+      for(let row=0;row<5;row++)for(let col=0;col<3;col++){
+        const lit=(row*7+col*3+Math.round(x))%4!==0;
+        block(.75,.48,.025,lit?0xd7b797:0x8ba0ae,
+          x-w*.33+col*w*.33,-15+row*(h-4)/5,z+w*.365+.02);
+      }
+    }
+    const foyerRoof=new T.Group();foyerRoof.name='Foyer ceiling';foyerRoof.visible=false;b.root.add(foyerRoof);
+    const foyerRoofMat=new T.MeshStandardMaterial({color:0xded6cd,roughness:.82,side:T.DoubleSide});
+    const foyerPanel=new T.Mesh(new T.BoxGeometry(12,.16,24),foyerRoofMat);
+    foyerPanel.position.set(28,4.12,0);foyerRoof.add(foyerPanel);
+    for(const z of [-9,-3,3,9]){
+      const light=new T.PointLight(0xffdbaf,.55,7);light.position.set(28,3.55,z);b.root.add(light);
+      foyerRoof.add(block(.55,.035,.55,0xffe6bd,28,4.02,z));
+    }
     // Guests face -Z on leaving the lift: reception +X, ballroom -X, terrace straight ahead.
     b.floor(28,0,12,24,0xc9c6be);
     for(let x=22;x<=34;x+=2)block(.018,.012,24,0x939995,x,.006,0);
@@ -332,6 +368,13 @@
     block(7.3,.025,2.6,0xa77873,25.3,.027,-2);
     // Low camera-side walls are cutaways; colliders still enclose the real corridor.
     b.wall(34,0,.24,24,1.05);
+    b.wall(34,-6,.24,12,3.85);
+    // Glazed right-hand wall beyond the reception desk opens to the city view.
+    const cityGlass=new T.Mesh(new T.BoxGeometry(.07,2.8,11.6),
+      new T.MeshPhongMaterial({color:0x9eb2bd,transparent:true,opacity:.22,depthWrite:false,side:T.DoubleSide}));
+    cityGlass.position.set(34,2.45,6.1);b.root.add(cityGlass);
+    for(const z of [1.1,4,7,10.9])block(.09,2.9,.07,0x8e999f,34,2.45,z);
+    block(.1,.09,11.6,0x8e999f,34,3.88,6.1);
     b.wall(22,7,.24,10,.85);
     b.wall(24.1,12,4.2,.24,.75);b.wall(31.9,12,4.2,.24,.75);
     b.wall(24,-12,4,.24,3.8);b.wall(32,-12,4,.24,3.8);

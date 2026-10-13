@@ -2263,13 +2263,13 @@
         const gm = new THREE.MeshPhongMaterial({ color:COL.gold, shininess:30, ...decal(-5) });
         // Soft grey-lavender diamond stone, like the reference venue's side aisles.
         const cp = canvasTex(256, 256, (x) => {
-          x.fillStyle = '#c5c2ca';x.fillRect(0,0,256,256);
+          x.fillStyle = '#9995a5';x.fillRect(0,0,256,256);
           x.save();x.translate(128,128);x.rotate(Math.PI/4);
           const tile=128/Math.SQRT2;
           for(let row=-5;row<=5;row++)for(let col=-5;col<=5;col++){
-            x.fillStyle=(row+col)%2===0?'#d6d3d8':'#aaa7b5';
+            x.fillStyle=(row+col)%2===0?'#aaa5b3':'#817d92';
             x.fillRect(col*tile,row*tile,tile,tile);
-            x.strokeStyle='rgba(247,245,246,.52)';x.lineWidth=1.25;
+            x.strokeStyle='rgba(228,224,233,.34)';x.lineWidth=1.1;
             x.strokeRect(col*tile+.7,row*tile+.7,tile-1.4,tile-1.4);
           }
           x.restore();
@@ -2283,7 +2283,7 @@
         cp.repeat.set(33.4 / 3.6, 35.6 / 3.6);
         const ballroomFloor=flat(
           new THREE.PlaneGeometry(33.4, 35.6),
-          new THREE.MeshPhongMaterial({ map: cp, shininess: 24, specular:0x77747b, ...decal(-1) }),
+          new THREE.MeshPhongMaterial({ map: cp, color:0xd5d0d8, shininess: 11, specular:0x55515b, ...decal(-1) }),
           5,
           4,
           0.02,
@@ -2482,6 +2482,19 @@
         bridalWall.name='Bridal rear wall';bridalWall.position.set(center,h/2,z1-.18);
         bridalWall.castShadow=true;bridalWall.receiveShadow=true;scene.add(bridalWall);
         sb(box(x1-x0+.1,.14,.42),COL.gold,center,h-.12,z1-.18);
+        // Hidden in TPP; FPP sees a real coffered ceiling instead of open sky.
+        const roof=new THREE.Group();roof.name='Ballroom ceiling';roof.visible=false;scene.add(roof);
+        const ceilingMat=new THREE.MeshPhongMaterial({color:0xe2dbd4,side:THREE.DoubleSide,shininess:6});
+        const ceiling=new THREE.Mesh(box(x1-x0,.16,z1-z0),ceilingMat);
+        ceiling.position.set(center,h+.03,(z0+z1)/2);roof.add(ceiling);
+        for(let x=-9;x<21;x+=6){
+          const rib=new THREE.Mesh(box(.11,.09,z1-z0),M(0xb9ada2));
+          rib.position.set(x,h-.11,(z0+z1)/2);roof.add(rib);
+        }
+        for(let z=-11;z<22;z+=6){
+          const rib=new THREE.Mesh(box(x1-x0,.09,.11),M(0xb9ada2));
+          rib.position.set(center,h-.11,z);roof.add(rib);
+        }
         // Low dado and the full-height rear wall enclose the whole hall.
         sb(box(x1-x0,1.05,.35),COL.bronze,center,.525,z1);
         sb(box(x1-x0,.08,.4),COL.gold,center,1.1,z1);cb(center,z1,(x1-x0)/2,.25);
@@ -3370,10 +3383,12 @@
         for(let z=.7;z<12.6;z+=1.05)for(const x of [aisleX-1.9,aisleX+1.9])flowerArrangement(x,z);
         // Carry both flower borders around the L-turn; keep the walking surface clear.
         for(const x of [-3.95,-3.1,-2.25,-1.4,-.55])flowerArrangement(x,-3.78);
+        for(let z=-3.55;z<.8;z+=.58)flowerArrangement(aisleX-1.9,z);
         for(const z of [-.32,.25,.82]){
           flowerArrangement(aisleX-1.9,z);
           flowerArrangement(aisleX+1.9,z);
         }
+        flowerArrangement(aisleX+1.9,-.22);
         // Curved gold floral chandeliers punctuate the processional path.
         for(const z of [3.3,9.3])for(const side of [-1,1]){
           const x=aisleX+side*2.08;
@@ -5515,10 +5530,10 @@
         $("#btnMusic").addEventListener("click", () => setMusic(!musicOn));
         $("#dialog").addEventListener("click", advance);
         $("#btnA").addEventListener("click", () => {
-          if (nearest && !busy()) nearest.run();
+          if (nearest && !busy() && !Journey.viewTutorial) nearest.run();
         });
         $("#actLabel").addEventListener("click", () => {
-          if (nearest && !busy()) nearest.run();
+          if (nearest && !busy() && !Journey.viewTutorial) nearest.run();
         });
         buildPhone();
         welcomeDone = !!store.get("welcomeDone", false);
@@ -5569,7 +5584,7 @@
             if (dlg.open) {
               e.preventDefault();
               advance();
-            } else if (!busy() && nearest) {
+            } else if (!busy() && !Journey.viewTutorial && nearest) {
               e.preventDefault();
               nearest.run();
             }
@@ -5646,7 +5661,13 @@
         });
         cv.addEventListener("pointermove", (e) => {
           if (!ptrs.has(e.pointerId)) return;
+          const previous=ptrs.get(e.pointerId);
           ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if(Journey.viewMode==='fpp'&&ptrs.size===1&&!Journey.viewTutorial){
+            Journey.fpYaw-=(e.clientX-previous.x)*.005;
+            Journey.fpPitch=clamp(Journey.fpPitch-(e.clientY-previous.y)*.004,-.5,.4);
+            player.face=Journey.fpYaw;
+          }
           if (ptrs.size === 2 && pinch0 > 0) {
             const [a, b] = [...ptrs.values()];
             zoom = clamp(
@@ -5691,7 +5712,7 @@
         gPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
         hitP = new THREE.Vector3();
       function handleTap(cx, cy) {
-        if (busy()) return;
+        if (busy() || Journey.viewTutorial) return;
         ndc.set((cx / innerWidth) * 2 - 1, -(cy / innerHeight) * 2 + 1);
         ray.setFromCamera(ndc, camera);
         if (Journey.active === 'ballroom' && guestsIM && seatGuests.length) {
@@ -5785,7 +5806,7 @@
         // movement intent
         let mx = 0,
           mz = 0;
-        if (!busy()) {
+        if (!busy() && !Journey.viewTutorial) {
           mx =
             joy.x +
             (keys.d || keys.arrowright ? 1 : 0) -
@@ -5804,7 +5825,8 @@
               mz /= l;
             }
             // Screen-relative movement follows the smoothly orbiting camera.
-            const yaw=Math.atan2(camera.position.x-camTarget.x,camera.position.z-camTarget.z);
+            const yaw=Journey.viewMode==='fpp'?Journey.fpYaw-Math.PI:
+              Math.atan2(camera.position.x-camTarget.x,camera.position.z-camTarget.z);
             const sx=mx,sz=mz;
             mx=sx*Math.cos(yaw)+sz*Math.sin(yaw);
             mz=-sx*Math.sin(yaw)+sz*Math.cos(yaw);
@@ -6075,18 +6097,18 @@
         scene = new THREE.Scene();
         scene.background = canvasTex(4, 256, (c, w, h) => {
           const g = c.createLinearGradient(0, 0, 0, h);
-          g.addColorStop(0, "#6fa3d8");
-          g.addColorStop(0.5, "#a9c8e6");
-          g.addColorStop(0.78, "#f3d3b0");
-          g.addColorStop(1, "#f0bf92");
+          g.addColorStop(0, "#34415e");
+          g.addColorStop(0.5, "#776782");
+          g.addColorStop(0.78, "#cb8979");
+          g.addColorStop(1, "#8d6e78");
           c.fillStyle = g;
           c.fillRect(0, 0, w, h);
         });
-        scene.fog = new THREE.Fog(0xeccdb0, 55, 105);
+        scene.fog = new THREE.Fog(0x8d7580, 55, 105);
         camera = new THREE.PerspectiveCamera(38, 1, 0.5, 200);
-        hemi = new THREE.HemisphereLight(0xe8eeff, 0x7a6a55, 0.62);
+        hemi = new THREE.HemisphereLight(0xffe6d6, 0x6c6266, 0.52);
         scene.add(hemi);
-        sun = new THREE.DirectionalLight(0xffdcb0, 0.8);
+        sun = new THREE.DirectionalLight(0xffd4b8, 0.66);
         sun.position.set(22, 30, 18);
         sun.castShadow = true;
         sun.shadow.mapSize.set(1024, 1024);

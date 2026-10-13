@@ -64,12 +64,17 @@
     // Small procedural environment: reflections without another network asset.
     const skyCanvas=document.createElement('canvas');skyCanvas.width=256;skyCanvas.height=128;
     const skyContext=skyCanvas.getContext('2d'),gradient=skyContext.createLinearGradient(0,0,0,128);
-    gradient.addColorStop(0,'#578ba9');gradient.addColorStop(.48,'#b8d9e4');
-    gradient.addColorStop(.52,'#d6bd93');gradient.addColorStop(1,'#40515b');
+    gradient.addColorStop(0,'#24344e');gradient.addColorStop(.44,'#66546e');
+    gradient.addColorStop(.6,'#d28475');gradient.addColorStop(1,'#283b50');
     skyContext.fillStyle=gradient;skyContext.fillRect(0,0,256,128);
     const skyTexture=new T.CanvasTexture(skyCanvas);skyTexture.encoding=T.sRGBEncoding;
     const pmrem=new T.PMREMGenerator(ctx.renderer),environment=pmrem.fromEquirectangular(skyTexture);
     scene.parent.environment=environment.texture;skyTexture.dispose();pmrem.dispose();
+    // Warm wayfinding pools keep the pedestrian route readable at blue hour.
+    for(const [x,z] of [[4,58],[42,51],[78,47],[101,36]]){
+      const lamp=new T.PointLight(0xffc58d,1.05,27,2);
+      lamp.position.set(x,5,z);scene.add(lamp);
+    }
 
     const materials = {
       gold: new T.MeshStandardMaterial({ color: 0xb89453, roughness: 0.36, metalness: 0.55 }),

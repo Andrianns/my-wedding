@@ -1,6 +1,7 @@
 /* Shared journey state. Classic script: integrates with the existing invitation. */
 window.Journey = (() => {
-  const J = { active:'mall', zones:{}, ready:false, route:[], state:null, cooldown:0 };
+  const J = { active:'mall', zones:{}, ready:false, route:[], state:null, cooldown:0,
+    viewMode:'tpp',viewUnlocked:false,viewTutorial:false,fpYaw:Math.PI,fpPitch:-.07 };
   Object.defineProperty(J, 'locked', { get:() => !!J.state });
   const el = id => document.getElementById(id);
   const enabled = item => item.enabled !== false && (typeof item.enabled !== 'function' || item.enabled());
@@ -76,6 +77,7 @@ window.Journey = (() => {
     if(next){walkTo=next;showMarker(next);}
   }
   J.go = (destination,inter=null) => {
+    if(J.viewTutorial)return;
     const path=J.findPath(destination);J.clearPath();
     if(!path.length){toast('Jalur tertutup. Dekati pintu atau panggil lift terlebih dahulu.');return;}
     J.route=path.map((p,i)=>({...p,inter:i===path.length-1?inter:null}));nextWaypoint();
@@ -88,10 +90,12 @@ window.Journey = (() => {
     target.elevator=spec.elevator;target.terraceDoor=spec.terraceDoor;target.update=spec.update;
   }
   function createScene(id){
-    const s=new THREE.Scene();s.background=new THREE.Color(id==='mall'?0xb4cddd:0xbcc8ce);
-    s.fog=new THREE.Fog(id==='mall'?0xb4cddd:0xbcc8ce,id==='mall'?230:65,id==='mall'?620:140);
-    const h=new THREE.HemisphereLight(0xc2e5ff,0x65503d,id==='mall'?.65:.6);s.add(h);
-    const light=new THREE.DirectionalLight(0xffe1b0,id==='mall'?1.05:.65);
+    const s=new THREE.Scene();
+    const backdrop=id==='mall'?0x34445f:id==='lobby'?0x675a58:0x687285;
+    s.background=new THREE.Color(backdrop);
+    s.fog=new THREE.Fog(backdrop,id==='mall'?230:65,id==='mall'?620:140);
+    const h=new THREE.HemisphereLight(id==='mall'?0xa49bb6:0xffdcba,0x65503d,id==='mall'?.48:.5);s.add(h);
+    const light=new THREE.DirectionalLight(id==='mall'?0xffb687:0xffd9aa,id==='mall'?.67:.62);
     light.position.set(id==='mall'?20:4,id==='mall'?100:20,id==='mall'?80:16);s.add(light);
     if(id==='mall'){
       light.castShadow=true;light.shadow.mapSize.set(1024,1024);
@@ -104,6 +108,37 @@ window.Journey = (() => {
     const z=J.zones[id];J.active=id;scene=z.scene;sun=z.sun;hemi=z.hemi;
     COLB=z.boxes;COLC=z.circles;INTER=z.interactions;PICK=z.picks;
   }
+  J.setViewMode = mode => {
+    J.viewMode=mode==='fpp'?'fpp':'tpp';
+    if(J.viewMode==='fpp')J.fpYaw=player.face;
+    else if(player)player.face=J.fpYaw;
+    if(player)player.g.visible=J.viewMode!=='fpp';
+    for(const z of Object.values(J.zones)){
+      for(const name of ['Ballroom ceiling','Foyer ceiling','Lobby ceiling','Lift ceiling']){
+        const roof=z.scene.getObjectByName(name);
+        if(roof)roof.visible=J.viewMode==='fpp';
+      }
+    }
+    const button=el('btnView');
+    if(button){
+      button.hidden=!J.viewUnlocked;
+      button.textContent=J.viewMode==='fpp'?'↗ TPP':'◎ FPP';
+      button.setAttribute('aria-label',J.viewMode==='fpp'?'Beralih ke sudut pandang orang ketiga':'Beralih ke sudut pandang orang pertama');
+      button.setAttribute('aria-pressed',String(J.viewMode==='fpp'));
+    }
+    J.cameraSnap=true;
+    if(J.ready)store.set('viewMode',J.viewMode);
+  };
+  J.toggleView = () => {
+    if(!J.viewUnlocked||J.locked)return;
+    J.clearPath();J.setViewMode(J.viewMode==='fpp'?'tpp':'fpp');
+    if(J.viewTutorial){
+      J.viewTutorial=false;store.set('viewHelpSeen',true);
+      el('viewTutorial').hidden=true;el('btnView').classList.remove('view-pulse');
+      refreshBusy();
+    }
+    J.save();
+  };
   J.activate = (id,position,heading=Math.PI) => {
     bindActive(id);const z=zone();J.clearPath();
     for(const obj of [player.g,marker,arrow,confetti.mesh])scene.add(obj);
@@ -116,8 +151,10 @@ window.Journey = (() => {
     renderer.outputEncoding=id==='ballroom'?THREE.LinearEncoding:THREE.sRGBEncoding;
     // r128: outputEncoding is the final gamma conversion; no duplicate gamma pass.
     renderer.toneMapping=id==='ballroom'?THREE.NoToneMapping:THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure=1;
+    renderer.toneMappingExposure=id==='mall'?.76:id==='lobby'?.88:1;
     J.cooldown=.9;J.cameraSnap=true;
+    if(id==='ballroom'&&!J.viewUnlocked){J.viewUnlocked=true;J.setViewMode(store.get('viewMode','tpp'));}
+    else J.setViewMode(id==='mall'?'tpp':J.viewMode);
   };
   J.portal = (target,position,heading=Math.PI) => {
     if(J.locked||!J.ready)return;
@@ -152,11 +189,22 @@ window.Journey = (() => {
       #journeyGuide{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:3;padding:8px 16px;background:#fff6e5ed;border:2px solid #9c8054;border-radius:20px;max-width:42vw;text-align:center;color:#58402d;font:800 13px var(--f-body,sans-serif);pointer-events:none}
       #journeyCurtain{position:fixed;inset:0;background:#18242e;z-index:12;pointer-events:none;opacity:0;transition:opacity .24s ease}
       #journeyRide{position:fixed;z-index:13;left:50%;top:22%;transform:translateX(-50%);background:#182c3eee;color:#ffe2a5;border:2px solid #c8a257;padding:18px 28px;border-radius:16px;text-align:center;font-size:20px;font-weight:800}
-      @media(max-width:600px){#journeyGuide{top:126px;max-width:90vw;width:max-content;font-size:11px;padding:6px 10px}#journeyRide{top:30%;font-size:17px;min-width:240px}.act:has(#btnPhone:not([hidden])) #btnA{width:52px;height:52px;font-size:22px}}
+      #btnView{min-width:78px;height:53px;padding:5px 9px;border:3px solid #593c2a;border-radius:17px;background:#e8e4df;color:#3f4353;font:800 17px var(--f-body,sans-serif);cursor:pointer;box-shadow:0 4px 0 #593c2a}
+      #btnView[hidden],#viewTutorial[hidden]{display:none!important}
+      #btnView.view-pulse{animation:viewPulse 1.1s ease-in-out infinite}
+      @keyframes viewPulse{0%,100%{box-shadow:0 4px 0 #593c2a,0 0 0 0 #f4cf7caa}50%{box-shadow:0 4px 0 #593c2a,0 0 0 11px #f4cf7c22}}
+      #viewTutorial{position:fixed;right:112px;bottom:calc(155px + env(safe-area-inset-bottom,0px));z-index:7;max-width:270px;padding:12px 16px;background:#fff6e9;color:#553f31;border:3px solid #9c8054;border-radius:16px;box-shadow:0 8px 22px #22172244;font:800 14px var(--f-body,sans-serif);pointer-events:none}
+      @media(max-width:600px){#journeyGuide{top:126px;max-width:90vw;width:max-content;font-size:11px;padding:6px 10px}#journeyRide{top:30%;font-size:17px;min-width:240px}.act:has(#btnPhone:not([hidden])) #btnA{width:52px;height:52px;font-size:22px}#viewTutorial{right:105px;bottom:calc(140px + env(safe-area-inset-bottom,0px));max-width:190px;font-size:12px}}
       @media(prefers-reduced-motion:reduce){#journeyCurtain{transition:none}}
     `;document.head.append(style);
     for(const id of ['journeyGuide','journeyCurtain','journeyRide']){const d=document.createElement('div');d.id=id;if(id!=='journeyCurtain'){d.setAttribute('role','status');d.setAttribute('aria-live','polite');}document.body.append(d);}
     el('journeyGuide').hidden=true;el('journeyRide').hidden=true;
+    const modeButton=document.createElement('button');modeButton.id='btnView';modeButton.type='button';modeButton.hidden=true;
+    el('btnPhone').parentElement.insertBefore(modeButton,el('btnPhone'));
+    modeButton.addEventListener('click',J.toggleView);
+    const hint=document.createElement('div');hint.id='viewTutorial';hint.setAttribute('role','status');
+    hint.textContent='Mode FPP aktif. Coba tombol TPP di atas HP untuk melihat seluruh ruangan; setelah itu kamu bebas memilih mode dan lanjut berjalan.';
+    hint.hidden=true;document.body.append(hint);
     el('btnOpen').disabled=true;el('worldRetry').onclick=()=>J.loadMall();
   }
   J.init = () => {
@@ -196,7 +244,7 @@ window.Journey = (() => {
   };
   J.update = dt => {
     J.cooldown=Math.max(0,J.cooldown-dt);
-    zone()?.update?.(dt,player.g.position,started&&!busy()&&J.cooldown===0);
+    zone()?.update?.(dt,player.g.position,started&&!busy()&&!J.viewTutorial&&J.cooldown===0);
     if(J.active==='mall'&&J.ready){
       const pp=player.g.position, dp=dog.g.position;
       const sunlight=zone().sun;
@@ -223,10 +271,18 @@ window.Journey = (() => {
       if(s.time>3.9&&!s.switched){
         const dest=J.zones[s.target];dest.elevator.close();dest.update?.(1,dest.elevator.cabinSpawn,false);
         J.activate(s.target,dest.elevator.cabinSpawn,goingUp?Math.PI:Math.PI/2);s.switched=true;
+        if(goingUp){J.viewUnlocked=true;J.setViewMode('fpp');}
         dest.elevator.setFloor(goingUp?'9':'Lobby');dest.elevator.open();el('journeyCurtain').style.opacity='0';
         el('journeyRide').textContent=goingUp?'Lantai 9 · Ballroom':'Lobby SOHO';
       }
-      if(s.time>4.75){J.state=null;el('journeyRide').hidden=true;J.save();refreshBusy();}
+      if(s.time>4.75){
+        J.state=null;el('journeyRide').hidden=true;
+        if(goingUp&&!store.get('viewHelpSeen',false)){
+          J.viewTutorial=true;J.clearPath();el('viewTutorial').hidden=false;
+          el('btnView').classList.add('view-pulse');
+        }
+        J.save();refreshBusy();
+      }
     }
   };
   J.updateGuide = () => {
@@ -245,7 +301,7 @@ window.Journey = (() => {
     }
     el('journeyGuide').hidden=!started||!J.ready||inside;
     if(el('journeyGuide').textContent!==label)el('journeyGuide').textContent=label;
-    arrow.visible=!!target&&started&&!busy()&&Math.hypot(p.x-target.x,p.z-target.z)>1.5;
+    arrow.visible=!!target&&started&&!busy()&&!J.viewTutorial&&Math.hypot(p.x-target.x,p.z-target.z)>1.5;
     if(arrow.visible){const dx=target.x-p.x,dz=target.z-p.z,d=Math.hypot(dx,dz);arrow.position.set(p.x+dx/d*1.3,p.y+.09,p.z+dz/d*1.3);arrow.rotation.y=Math.atan2(-dx,-dz);arrow.material.opacity=.7+Math.sin(T*4)*.15;}
   };
   J.updateCamera = dt => {
@@ -255,6 +311,16 @@ window.Journey = (() => {
       else if(J.active==='ballroom'){camera.position.set(0,30,30);camera.lookAt(0,0,-10);}
       else{camera.position.set(-4,22,22);camera.lookAt(-6,0,0);}
       camera.fov=portrait?64:51;camera.updateProjectionMatrix();return;
+    }
+    if(J.viewMode==='fpp'){
+      const eye=new THREE.Vector3(p.x,p.y+1.6,p.z);
+      camera.position.lerp(eye,J.cameraSnap?1:1-Math.exp(-7*dt));
+      J.cameraSnap=false;
+      camera.lookAt(eye.x+Math.sin(J.fpYaw)*8,eye.y+Math.sin(J.fpPitch)*8,
+        eye.z+Math.cos(J.fpYaw)*8);
+      camera.fov=portrait?73:66;camera.updateProjectionMatrix();
+      camTarget.set(p.x,0,p.z);
+      return;
     }
     const nearDoor=J.active==='ballroom'&&(
       (Math.abs(p.x-BLD.x1)<5&&Math.abs(p.z-BLD.entranceZ)<7)||
